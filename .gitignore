@@ -1,0 +1,13 @@
+.git
+*.h~
+*.hex
+*.a
+*.o
+*.cod
+*.asm
+*.lst
+/bin
+.classpath
+.buildpath
+/.settings
+/target

@@ -17,8 +17,13 @@
 
 #include "Include/LCDBlocking.h"
 
-#define CLOCK_FREQ 40000000 // 40 Mhz
+#define CLOCK_FREQ 30000000 // 30 Mhz
 #define EXEC_FREQ CLOCK_FREQ/4 // 4 clock cycles to execute an instruction
+
+#define INTERRUPTS_PER_SECOND 117187
+#define PRESCALER 4
+
+int interrupts;
 
 typedef enum { false, true } bool;
 
@@ -44,8 +49,7 @@ void delay_ms(unsigned int ms) {
     }
 }
 
-void DisplayString(BYTE pos, char* text);
-void displayStringSplitted(BYTE pos, char* text);
+void displayString(BYTE pos, char* text);
 
 void main(void)
    {
@@ -55,10 +59,10 @@ void main(void)
    delay_ms(100);
 
 
-    displayStringSplitted(0, "Good morning, Louvain-la-Neuve"); //first arg is start position
-                                                 // on 32 positions LCD
+   displayString(0, "Good morning");
+   displayString(16, "Louvain-la-Neuve");
 
-    LCDUpdate();
+   LCDUpdate();
 
    /* main loop of this toy program: turn led 2 on and off every second */
    LED1_IO=1;
@@ -70,58 +74,14 @@ void main(void)
 }
 
 
-#if defined(__SDCC__)
-
 /*************************************************
- Function DisplayString:
+ Function displayString:
  Writes the first characters of the string in the remaining
  space of the 32 positions LCD, starting at pos
  (does not use strlcopy, so can use up to the 32th place)
 *************************************************/
 
-size_t nextWordLength(char* text) {
-    size_t l = strlen(text);/*number of actual chars in the string*/
-    size_t n = 0;
-    const char *s = text;
-    while(l-- != 0) {
-        if (*s == ' ') break;
-        n++;
-        s++;
-    }
-
-    return n;
-}
-
-void displayStringSplitted(BYTE pos, char* text) {
-    BYTE        l = strlen(text);/*number of actual chars in the string*/
-    BYTE      max = 32-pos;    /*available space on the lcd*/
-    char       *d = (char*)&LCDText[pos];
-    const char *s = text;
-    size_t      n = (l<max)?l:max;
-    size_t      remainingLine = 16 - (pos % 16);
-    size_t      nextWord;
-    char        newWord = true;
-    if (n != 0) {
-        while (n-- != 0) {
-            if (*s == ' ') {
-                newWord = true;
-            } else {
-                if (newWord) {
-                    newWord = false;
-                    nextWord = nextWordLength(s);
-                    if (nextWord > remainingLine && nextWord <= 16) {
-                        displayStringSplitted(pos+16, s);
-                        break;
-                    }
-                }
-            }
-            *d++ = *s++;
-            remainingLine--;
-        }
-    }
-}
-
-void DisplayString(BYTE pos, char* text)
+void displayString(BYTE pos, char* text)
 {
    BYTE        l = strlen(text);/*number of actual chars in the string*/
    BYTE      max = 32-pos;    /*available space on the lcd*/
@@ -133,7 +93,3 @@ void DisplayString(BYTE pos, char* text)
       while (n-- != 0)*d++ = *s++;
    LCDUpdate();
 }
-
-
-
-#endif

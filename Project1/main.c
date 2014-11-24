@@ -16,61 +16,38 @@
                          //names of the sfr
 
 #include "Include/LCDBlocking.h"
+#include "Include/TCPIP_Stack/Delay.h"
 
 #define CLOCK_FREQ 30000000 // 30 Mhz
 #define EXEC_FREQ CLOCK_FREQ/4 // 4 clock cycles to execute an instruction
 
-#define INTERRUPTS_PER_SECOND 117187
-#define PRESCALER 4
+#define INTERRUPTS_PER_SECOND 95
 
-int interrupts;
+unsigned long int interrupts;
+unsigned long int lastSeconds = 0;
 
 typedef enum { false, true } bool;
 
-// wait for approx 1ms
-void delay_1ms(void) {
-    TMR0H=(0x10000-EXEC_FREQ/1000)>>8;
-    TMR0L=(0x10000-EXEC_FREQ/1000)&0xff;
-    T0CONbits.TMR0ON=0; // disable timer0
-    T0CONbits.T08BIT=0; // use timer0 16-bit counter
-    T0CONbits.T0CS=0; // use timer0 instruction cycle clock
-    T0CONbits.PSA=1; // disable timer0 prescaler
-    INTCONbits.T0IF=0; // clear timer0 overflow bit
-    T0CONbits.TMR0ON=1; // enable timer0
-    while (!INTCONbits.T0IF) {} // wait for timer0 overflow
-    INTCONbits.T0IF=0; // clear timer0 overflow bit
-    T0CONbits.TMR0ON=0; // disable timer0
-}
-
-// wait for some ms
-void delay_ms(unsigned int ms) {
-    while (ms--) {
-        delay_1ms();
-    }
-}
-
+void init(void);
+void clockInit(void);
+void startTimer(void);
+void updateTime();
 void displayString(BYTE pos, char* text);
+void startTimeEdit(void);
+
+bool hourEdit = false;
+bool minEdit = false;
+bool secEdit = false;
+bool blinkState = false;
+
+long int lastBlinkChange;
+
+typedef enum { setTime, running } state;
+state currentState;
 
 void main(void)
-   {
-   LED1_TRIS = 0; //configure 2nd led pin as output (red)
-
-   LCDInit();
-   delay_ms(100);
-
-
-   displayString(0, "Good morning");
-   displayString(16, "Louvain-la-Neuve");
-
-   LCDUpdate();
-
-   /* main loop of this toy program: turn led 2 on and off every second */
-   LED1_IO=1;
-   while(1)
-   {
-      delay_ms(1000);
-      LED1_IO^=1;
-   }
+{
+    init();
 }
 
 
@@ -92,4 +69,109 @@ void displayString(BYTE pos, char* text)
     if (n != 0)
       while (n-- != 0)*d++ = *s++;
    LCDUpdate();
+}
+
+void init(void) {
+    startTimeEdit();
+    LCDInit();
+    DelayMs(100);
+    displayString(0, "Time: 00:00:00");
+    clockInit();
+}
+
+void startTimeEdit(void) {
+    currentState = setTime;
+    hourEdit = true;
+    blinkState = true;
+    lastBlinkChange = interrupts;
+}
+
+void updateTime(void)
+{
+    unsigned long int seconds;
+    char time[8];
+    char hoursChar[3];
+    char minutesChar[3];
+    char secondsChar[3];
+    int hours;
+    int min;
+    int sec;
+    bool blinkUpdated = false;
+
+    seconds = interrupts / INTERRUPTS_PER_SECOND;
+
+    if (currentState == setTime) {
+        if (lastBlinkChange + INTERRUPTS_PER_SECOND / 2 >= interrupts) {
+            blinkState = !blinkState;
+            lastBlinkChange = interrupts;
+            blinkUpdated = true;
+        }
+    }
+
+    if (seconds == lastSeconds && !blinkUpdated) {
+        return;
+    }
+    if (seconds == 86400) {
+        seconds = 0;
+        interrupts = 0;
+    }
+    lastSeconds = seconds;
+    hours = seconds / 3600;
+    min = (seconds % 3600) / 60;
+    sec = (seconds % 3600) % 60;
+
+    if (currentState == setTime && hourEdit && !blinkState) {
+        sprintf(hoursChar, "  ");
+    }
+    else {
+        sprintf(hoursChar, "%02d", hours);
+    }
+    if (currentState == setTime && minEdit && !blinkState) {
+        sprintf(minutesChar, "  ");
+    }
+    else {
+        sprintf(minutesChar, "%02d", min);
+    }
+    if (currentState == setTime && secEdit && !blinkState) {
+        sprintf(secondsChar, "  ");
+    }
+    else {
+        sprintf(secondsChar, "%02d", sec);
+    }
+
+    sprintf(time, "%s:%s:%s", hoursChar, minutesChar, secondsChar);
+    displayString(6, time);
+}
+
+void clockInit(void)
+{
+    interrupts = 987654;
+    T0CONbits.TMR0ON=0; // disable timer0
+    T0CONbits.T08BIT=0; // use timer0 16-bit counter
+    T0CONbits.T0CS=0; // use timer0 instruction cycle clock
+    T0CONbits.PSA=1; // disable timer0 prescaler
+    INTCONbits.T0IE=1; // enable timer0 interrupts
+    INTCONbits.GIE=1;   //enable high priority interrupts
+
+    updateTime();
+}
+
+void startTimer(void)
+{
+    INTCONbits.T0IF=0;
+    T0CONbits.TMR0ON=1;
+}
+
+void LowISR(void) __interrupt 2
+{
+    //put the code here
+}
+
+void HighISR(void) __interrupt 1
+{
+    if (INTCONbits.T0IF) { // Timer0 Interrupt
+        startTimer();
+        interrupts++;
+        updateTime();
+    }
 }

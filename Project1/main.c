@@ -12,42 +12,72 @@
 
 #include <string.h>
 #include <stdlib.h>
+#include <stdio.h>
 #include <pic18fregs.h>  //defines the address corresponding to the symbolic
                          //names of the sfr
+#include <limits.h>
 
 #include "Include/LCDBlocking.h"
 #include "Include/TCPIP_Stack/Delay.h"
-
-#define CLOCK_FREQ 30000000 // 30 Mhz
-#define EXEC_FREQ CLOCK_FREQ/4 // 4 clock cycles to execute an instruction
-
-#define INTERRUPTS_PER_SECOND 95
-
-unsigned long int interrupts;
-unsigned long int lastSeconds = 0;
-
-typedef enum { false, true } bool;
+#include "main.h"
+#include "Clock.h"
 
 void init(void);
-void clockInit(void);
+void initTimer(void);
 void startTimer(void);
 void updateTime();
 void displayString(BYTE pos, char* text);
 void startTimeEdit(void);
 
-bool hourEdit = false;
-bool minEdit = false;
-bool secEdit = false;
-bool blinkState = false;
+int interrupts;
 
-long int lastBlinkChange;
+typedef enum { false, true } bool;
+typedef enum { editHours, editMin, editSec, noEdit } editState;
+editState currentEditState;
 
-typedef enum { setTime, running } state;
+typedef enum { setTime, display } state;
 state currentState;
 
 void main(void)
 {
     init();
+}
+
+void init(void) {
+    BUTTON0_TRIS = 1; //configure button0 as input
+    RCONbits.IPEN      = 1;   //enable interrupts priority levels
+    INTCON3bits.INT1P  = 1;   //connect INT1 interrupt (button 2) to high prio
+    INTCON2bits.INTEDG1= 0;   //INT1 interrupts on falling edge
+    INTCONbits.GIE     = 1;   //enable high priority interrupts
+    INTCON3bits.INT1E  = 1;   //enable INT1 interrupt (button 2)
+    INTCON3bits.INT1F  = 0;   //clear INT1 flag
+
+    BUTTON1_TRIS = 1; //configure button1 as input
+    INTCON2bits.INT3IP  = 1;   //connect INT1 interrupt (button 2) to high prio
+    INTCON2bits.INTEDG3= 0;   //INT1 interrupts on falling edge
+    INTCONbits.GIE     = 1;   //enable high priority interrupts
+    INTCON3bits.INT3E  = 1;   //enable INT1 interrupt (button 2)
+    INTCON3bits.INT3IF  = 0;   //clear INT1 flag
+
+    startTimeEdit();
+    LCDInit();
+    displayString(0, "Time: 00:00:00");
+    initClock();
+    initTimer();
+
+    updateTime();
+}
+
+void initTimer(void)
+{
+    interrupts = 0;
+    T0CONbits.TMR0ON=0; // disable timer0
+    T0CONbits.T08BIT=0; // use timer0 16-bit counter
+    T0CONbits.T0CS=0; // use timer0 instruction cycle clock
+    T0CONbits.PSA=1; // disable timer0 prescaler
+    INTCONbits.T0IE=1; // enable timer0 interrupts
+
+    startTimer();
 }
 
 
@@ -71,89 +101,31 @@ void displayString(BYTE pos, char* text)
    LCDUpdate();
 }
 
-void init(void) {
-    startTimeEdit();
-    LCDInit();
-    DelayMs(100);
-    displayString(0, "Time: 00:00:00");
-    clockInit();
-}
-
 void startTimeEdit(void) {
     currentState = setTime;
-    hourEdit = true;
-    blinkState = true;
-    lastBlinkChange = interrupts;
+    currentEditState = editHours;
+    disableClock();
 }
 
 void updateTime(void)
 {
-    unsigned long int seconds;
-    char time[8];
-    char hoursChar[3];
-    char minutesChar[3];
-    char secondsChar[3];
-    int hours;
-    int min;
-    int sec;
-    bool blinkUpdated = false;
-
-    seconds = interrupts / INTERRUPTS_PER_SECOND;
+    char *timeString = getClockTime();
 
     if (currentState == setTime) {
-        if (lastBlinkChange + INTERRUPTS_PER_SECOND / 2 >= interrupts) {
-            blinkState = !blinkState;
-            lastBlinkChange = interrupts;
-            blinkUpdated = true;
+        if (currentEditState == editHours && ((interrupts / (clockTicksPerSeconds / 2)) % 2) != 0) {
+            timeString[0] = ' ';
+            timeString[1] = ' ';
+        }
+        else if (currentEditState == editMin && ((interrupts / (clockTicksPerSeconds / 2)) % 2) != 0) {
+            timeString[3] = ' ';
+            timeString[4] = ' ';
+        }
+        else if (currentEditState == editSec && ((interrupts / (clockTicksPerSeconds / 2)) % 2) != 0) {
+            timeString[6] = ' ';
+            timeString[7] = ' ';
         }
     }
-
-    if (seconds == lastSeconds && !blinkUpdated) {
-        return;
-    }
-    if (seconds == 86400) {
-        seconds = 0;
-        interrupts = 0;
-    }
-    lastSeconds = seconds;
-    hours = seconds / 3600;
-    min = (seconds % 3600) / 60;
-    sec = (seconds % 3600) % 60;
-
-    if (currentState == setTime && hourEdit && !blinkState) {
-        sprintf(hoursChar, "  ");
-    }
-    else {
-        sprintf(hoursChar, "%02d", hours);
-    }
-    if (currentState == setTime && minEdit && !blinkState) {
-        sprintf(minutesChar, "  ");
-    }
-    else {
-        sprintf(minutesChar, "%02d", min);
-    }
-    if (currentState == setTime && secEdit && !blinkState) {
-        sprintf(secondsChar, "  ");
-    }
-    else {
-        sprintf(secondsChar, "%02d", sec);
-    }
-
-    sprintf(time, "%s:%s:%s", hoursChar, minutesChar, secondsChar);
-    displayString(6, time);
-}
-
-void clockInit(void)
-{
-    interrupts = 987654;
-    T0CONbits.TMR0ON=0; // disable timer0
-    T0CONbits.T08BIT=0; // use timer0 16-bit counter
-    T0CONbits.T0CS=0; // use timer0 instruction cycle clock
-    T0CONbits.PSA=1; // disable timer0 prescaler
-    INTCONbits.T0IE=1; // enable timer0 interrupts
-    INTCONbits.GIE=1;   //enable high priority interrupts
-
-    updateTime();
+    displayString(6, timeString);
 }
 
 void startTimer(void)
@@ -171,7 +143,45 @@ void HighISR(void) __interrupt 1
 {
     if (INTCONbits.T0IF) { // Timer0 Interrupt
         startTimer();
+        if (INT_MAX - 1 < interrupts) {
+            interrupts = 0;
+        }
         interrupts++;
+        tickClock();
         updateTime();
+    }
+    if(INTCON3bits.INT1F == 1)
+    {
+        INTCON3bits.INT1F  = 0;   //clear INT1 flag
+        if(BUTTON0_IO);  //just read the bit
+        if (currentState == setTime) {
+            if (currentEditState == editHours) {
+                addTicksClock(clockTicksPerSeconds * 3600);
+            } else if (currentEditState == editMin) {
+                addTicksClock(clockTicksPerSeconds * 60);
+            } else if (currentEditState == editSec) {
+                addTicksClock(clockTicksPerSeconds);
+            }
+        } else {
+            startTimeEdit();
+        }
+        updateTime();
+    }
+    if(INTCON3bits.INT3IF == 1)
+    {
+        if(BUTTON1_IO);  //just read the bit
+        INTCON3bits.INT3IF  = 0;   //clear INT1 flag
+        if (currentState == setTime) {
+            if (currentEditState == editHours) {
+                currentEditState = editMin;
+            } else if (currentEditState == editMin) {
+                currentEditState = editSec;
+            } else if (currentEditState == editSec) {
+                currentEditState = noEdit;
+                currentState = display;
+                enableClock();
+            }
+            updateTime();
+        }
     }
 }

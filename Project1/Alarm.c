@@ -22,19 +22,8 @@ void initAlarm(void) {
 }
 
 char* getAlarmTime(void) {
-    long int secondsToday = alarmTime / getClockTicksPerSecond();
-    int hours;
-    int minutes;
-    int seconds;
     char alarmTimeString[16];
-
-    hours = secondsToday / 3600;
-    minutes = (secondsToday % 3600) / 60;
-    seconds = (secondsToday % 3600) % 60;
-
-    sprintf(alarmTimeString, "%02d:%02d:%02d", hours, minutes, seconds);
-
-    return alarmTimeString;
+    return ticksToTime(alarmTime, alarmTimeString);
 }
 
 void enableAlarm(void) {

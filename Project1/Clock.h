@@ -10,7 +10,7 @@
 
 void initClock(void);
 void tickClock(void);
-char* ticksToTime(long int ticks);
+char* ticksToTime(long int ticks, char* timeString);
 char* getClockTime(void);
 void addTicksClock(long int newTicks);
 void enableClock(void);

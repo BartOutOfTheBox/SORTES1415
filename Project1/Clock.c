@@ -45,31 +45,19 @@ void disableClock(void) {
 }
 
 char* getClockTime(void) {
-    long int secondsToday = clockTicks / getClockTicksPerSecond();
-    int hours;
-    int minutes;
-    int seconds;
-    char clockTimeString[16];
-
-    hours = secondsToday / 3600;
-    minutes = (secondsToday % 3600) / 60;
-    seconds = (secondsToday % 3600) % 60;
-
-    sprintf(clockTimeString, "%02d:%02d:%02d", hours, minutes, seconds);
-
-    return clockTimeString;
+	char clockTimeString[16];
+    return ticksToTime(clockTicks, clockTimeString);
 }
 
 long int getClockTicks(void) {
     return clockTicks;
 }
 
-char* ticksToTime(long int ticks) {
+char* ticksToTime(long int ticks, char* timeString) {
     long int secondsToday = ticks / getClockTicksPerSecond();
     int hours;
     int minutes;
     int seconds;
-    char timeString[16];
 
     hours = secondsToday / 3600;
     minutes = (secondsToday % 3600) / 60;

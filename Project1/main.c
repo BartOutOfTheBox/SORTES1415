@@ -43,10 +43,10 @@ unsigned char _MALLOC_SPEC heap[256];
 long int interrupts;
 volatile bool stateChange;
 
-typedef enum { editHours, editMin, editSec, noEdit } editState;
+typedef enum { EditHours, EditMin, EditSec, NoEdit } editState;
 editState currentEditState;
 
-typedef enum { setTime, setAlarm, display } state;
+typedef enum { SetTime, SetAlarm, Display } state;
 state currentState;
 
 bool button1Pressed;
@@ -67,24 +67,24 @@ void main(void)
 
 void checkButtons() {
     if (button2Pressed) {
-        button2Pressed = false;
-        if (getAlarmState() == alarmSounding) {
+        button2Pressed = False;
+        if (getAlarmState() == AlarmSounding) {
             enableAlarm();
         }
-        else if (currentState == setTime) {
-            if (currentEditState == editHours) {
+        else if (currentState == SetTime) {
+            if (currentEditState == EditHours) {
                 addSecondsClock(3600);
-            } else if (currentEditState == editMin) {
+            } else if (currentEditState == EditMin) {
                 addSecondsClock(60);
-            } else if (currentEditState == editSec) {
+            } else if (currentEditState == EditSec) {
                 addSecondsClock(1);
             }
-        } else if (currentState == setAlarm) {
-            if (currentEditState == editHours) {
+        } else if (currentState == SetAlarm) {
+            if (currentEditState == EditHours) {
                 addSecondsAlarm(3600);
-            } else if (currentEditState == editMin) {
+            } else if (currentEditState == EditMin) {
                 addSecondsAlarm(60);
-            } else if (currentEditState == editSec) {
+            } else if (currentEditState == EditSec) {
                 addSecondsAlarm(1);
             }
         } else {
@@ -92,18 +92,18 @@ void checkButtons() {
         }
     }
     else if (button1Pressed) {
-        button1Pressed = false;
-        if (getAlarmState() == alarmSounding) {
+        button1Pressed = False;
+        if (getAlarmState() == AlarmSounding) {
             enableAlarm();
         }
-        else if (currentState == setTime || currentState == setAlarm) {
-            if (currentEditState == editHours) {
-                currentEditState = editMin;
-            } else if (currentEditState == editMin) {
-                currentEditState = editSec;
-            } else if (currentEditState == editSec) {
-                if (currentState == setTime) {
-                    if (getAlarmState() == alarmUnset) {
+        else if (currentState == SetTime || currentState == SetAlarm) {
+            if (currentEditState == EditHours) {
+                currentEditState = EditMin;
+            } else if (currentEditState == EditMin) {
+                currentEditState = EditSec;
+            } else if (currentEditState == EditSec) {
+                if (currentState == SetTime) {
+                    if (getAlarmState() == AlarmUnset) {
                         enableClock();
                         startAlarmEdit();
                     }
@@ -127,7 +127,7 @@ void init(void) {
     int lastAlarmSecondsPrint = -1;
 
     _initHeap(heap, 256);
-    button2Pressed = false;
+    button2Pressed = False;
     BUTTON0_TRIS = 1; //configure button0 as input
     RCONbits.IPEN      = 1;   //enable interrupts priority levels
     INTCON3bits.INT1P  = 1;   //connect INT1 interrupt (button 2) to high prio
@@ -136,7 +136,7 @@ void init(void) {
     INTCON3bits.INT1E  = 1;   //enable INT1 interrupt (button 2)
     INTCON3bits.INT1F  = 0;   //clear INT1 flag
 
-    button1Pressed = false;
+    button1Pressed = False;
     BUTTON1_TRIS = 1; //configure button1 as input
     INTCON2bits.INT3IP  = 1;   //connect INT1 interrupt (button 1) to high prio
     INTCON2bits.INTEDG3 = 0;   //INT1 interrupts on falling edge
@@ -154,7 +154,7 @@ void init(void) {
     initAlarm();
     initTimer();
 
-    stateChange = true;
+    stateChange = True;
 }
 
 void initTimer(void)
@@ -193,43 +193,43 @@ void displayString(BYTE pos, char* text)
 }
 
 void startTimeEdit(void) {
-    currentState = setTime;
-    currentEditState = editHours;
+    currentState = SetTime;
+    currentEditState = EditHours;
     disableClock();
     disableAlarm();
-    stateChange = true;
+    stateChange = True;
 }
 
 void startAlarmEdit(void) {
-    currentState = setAlarm;
-    currentEditState = editHours;
+    currentState = SetAlarm;
+    currentEditState = EditHours;
     disableAlarm();
-    stateChange = true;
+    stateChange = True;
 }
 
 void startDisplay(void) {
-    currentState = display;
-    currentEditState = noEdit;
+    currentState = Display;
+    currentEditState = NoEdit;
     enableClock();
     enableAlarm();
-    stateChange = true;
+    stateChange = True;
 }
 
 void updateClock(void) {
     checkAlarm();
 
     if (stateChange) {
-        stateChange = false;
+        stateChange = False;
         LCDErase();
-        if (currentState == display) {
+        if (currentState == Display) {
             displayString(0, "Time:");
             displayString(16, "Alarm:");
         }
-        else if (currentState == setAlarm) {
+        else if (currentState == SetAlarm) {
             displayString(0, "Enter the alarm");
             displayString(16, "Alarm:");
         }
-        else if (currentState == setTime) {
+        else if (currentState == SetTime) {
             displayString(16, "Enter the time");
             displayString(0, "Time:");
         }
@@ -239,15 +239,15 @@ void updateClock(void) {
 }
 
 void blinkTimeEdit(char* timeString) {
-    if (currentEditState == editHours && ((interrupts / (ticksPerSecond / 2)) % 2) != 0) {
+    if (currentEditState == EditHours && ((interrupts / (ticksPerSecond / 2)) % 2) != 0) {
         timeString[0] = ' ';
         timeString[1] = ' ';
     }
-    else if (currentEditState == editMin && ((interrupts / (ticksPerSecond / 2)) % 2) != 0) {
+    else if (currentEditState == EditMin && ((interrupts / (ticksPerSecond / 2)) % 2) != 0) {
         timeString[3] = ' ';
         timeString[4] = ' ';
     }
-    else if (currentEditState == editSec && ((interrupts / (ticksPerSecond / 2)) % 2) != 0) {
+    else if (currentEditState == EditSec && ((interrupts / (ticksPerSecond / 2)) % 2) != 0) {
         timeString[6] = ' ';
         timeString[7] = ' ';
     }
@@ -255,7 +255,7 @@ void blinkTimeEdit(char* timeString) {
 
 void updateTime(void)
 {
-    bool update = false;
+    bool update = False;
     time_t *clockTimeStruct = updateAndGetClockTime();
     time_t *alarmTimeStruct = updateAndGetAlarmTime();
     char clockTimeString[8];
@@ -264,22 +264,22 @@ void updateTime(void)
     sprintf(clockTimeString, "%02d:%02d:%02d", clockTimeStruct->hours, clockTimeStruct->minutes, clockTimeStruct->seconds);
     sprintf(alarmTimeString, "%02d:%02d:%02d", alarmTimeStruct->hours, alarmTimeStruct->minutes, alarmTimeStruct->seconds);
 
-    if (currentState == setTime) {
+    if (currentState == SetTime) {
         blinkTimeEdit(clockTimeString);
         displayString(7, clockTimeString);
-        update = true;
+        update = True;
     }
-    else if (currentState == setAlarm) {
+    else if (currentState == SetAlarm) {
         blinkTimeEdit(alarmTimeString);
         displayString(23, alarmTimeString);
-        update = true;
+        update = True;
     }
     else {
         if (lastClockSecondsPrint != clockTimeStruct->secondsOfTheDay) {
-            update = true;
+            update = True;
         }
         if (lastAlarmSecondsPrint != alarmTimeStruct->secondsOfTheDay) {
-            update = true;
+            update = True;
         }
         displayString(7, clockTimeString);
         displayString(23, alarmTimeString);
@@ -336,13 +336,13 @@ void HighISR(void) __interrupt 1
     {
         INTCON3bits.INT1F  = 0;   //clear INT1 flag
         if(BUTTON0_IO);  //just read the bit
-        button2Pressed = true;
+        button2Pressed = True;
     }
     else if(INTCON3bits.INT3IF)
     {
         INTCON3bits.INT3IF  = 0;   //clear INT1 flag
         if(BUTTON1_IO);  //just read the bit
-        button1Pressed = true;
+        button1Pressed = True;
     }
     //updateClock();
 }

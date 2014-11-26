@@ -14,7 +14,7 @@
 #include <malloc.h>
 #include "time.h"
 
-typedef enum { clockDisabled, clockRunning } clockState;
+typedef enum { ClockDisabled, ClockRunning } clockState;
 
 clockState currentClockState;
 long int clockTicks;
@@ -27,13 +27,13 @@ void initClock(void) {
     clockTimeStruct->minutes = 0;
     clockTimeStruct->seconds = 0;
     clockTimeStruct->secondsOfTheDay = 0;
-    currentClockState = clockDisabled;
+    currentClockState = ClockDisabled;
     clockTicks = 0;
     clockSeconds = 0;
 }
 
 void tickClock(void) {
-    if (currentClockState == clockRunning) {
+    if (currentClockState == ClockRunning) {
         clockTicks++;
         if (clockTicks == ticksPerSecond) {
             clockSeconds++;
@@ -50,10 +50,10 @@ void addSecondsClock(long int newSeconds) {
 }
 
 void enableClock(void) {
-    currentClockState = clockRunning;
+    currentClockState = ClockRunning;
 }
 void disableClock(void) {
-    currentClockState = clockDisabled;
+    currentClockState = ClockDisabled;
 }
 
 time_t * updateAndGetClockTime(void) {
@@ -77,6 +77,6 @@ void ticksToTime(long int secondsToday, time_t * timeStruct) {
 }
 
 bool showClockLed(void) {
-    return (currentClockState == clockRunning && ((clockTicks / (ticksPerSecond / 2)) % 2) != 0);
+    return (currentClockState == ClockRunning && ((clockTicks / (ticksPerSecond / 2)) % 2) != 0);
 }
 

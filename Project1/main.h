@@ -10,5 +10,5 @@
 
 long long getInterrupts(void);
 
-typedef enum { false, true } bool;
+typedef enum { False, True } bool;
 #endif /* MAIN_H_ */

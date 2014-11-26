@@ -29,15 +29,15 @@ void initAlarm(void) {
     alarmTimeStruct->seconds = 0;
     alarmTimeStruct->secondsOfTheDay = 0;
     alarmTime = 0;
-    currentAlarmState = alarmUnset;
+    currentAlarmState = AlarmUnset;
 }
 
 void enableAlarm(void) {
-    currentAlarmState = alarmEnabled;
+    currentAlarmState = AlarmEnabled;
 }
 
 void disableAlarm(void) {
-    currentAlarmState = alarmDisabled;
+    currentAlarmState = AlarmDisabled;
 }
 
 time_t *updateAndGetAlarmTime(void) {
@@ -51,15 +51,15 @@ void addSecondsAlarm(long int newSeconds) {
 }
 
 void checkAlarm(void) {
-    if (currentAlarmState == alarmEnabled) {
+    if (currentAlarmState == AlarmEnabled) {
         if (alarmTime == clockSeconds) {
-            currentAlarmState = alarmSounding;
+            currentAlarmState = AlarmSounding;
             alarmStart = alarmTime;
             alarmEnd = (clockSeconds + 30) % 86400;
         }
     }
-    else if (currentAlarmState == alarmSounding && clockSeconds == alarmEnd) {
-        currentAlarmState = alarmEnabled;
+    else if (currentAlarmState == AlarmSounding && clockSeconds == alarmEnd) {
+        currentAlarmState = AlarmEnabled;
     }
 }
 
@@ -68,5 +68,5 @@ alarmState getAlarmState(void) {
 }
 
 bool showAlarmLed(void) {
-    return (currentAlarmState == alarmSounding && (clockSeconds % 2) != 0);
+    return (currentAlarmState == AlarmSounding && (clockSeconds % 2) != 0);
 }

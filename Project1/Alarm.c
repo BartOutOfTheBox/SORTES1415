@@ -11,19 +11,23 @@
 #include "Alarm.h"
 #include "main.h"
 #include "Clock.h"
+#include <malloc.h>
 
 alarmState currentAlarmState;
 
+int alarmStart;
+
+time * alarmTimeStruct;
 long int alarmTime;
 
 void initAlarm(void) {
-    currentAlarmState = alarmUnset;
+    alarmTimeStruct = (time *) malloc(sizeof (time));
+    alarmTimeStruct->hours = 0;
+    alarmTimeStruct->minutes = 0;
+    alarmTimeStruct->seconds = 0;
+    alarmTimeStruct->secondsOfTheDay = 0;
     alarmTime = 0;
-}
-
-char* getAlarmTime(void) {
-    char alarmTimeString[16];
-    return ticksToTime(alarmTime, alarmTimeString);
+    currentAlarmState = alarmUnset;
 }
 
 void enableAlarm(void) {
@@ -34,22 +38,38 @@ void disableAlarm(void) {
     currentAlarmState = alarmDisabled;
 }
 
-void addTicksAlarm(long int newTicks) {
-    if (ULONG_MAX - newTicks >= alarmTime) {
-        alarmTime = alarmTime + newTicks;
-        alarmTime = (alarmTime % (getClockTicksPerSecond() * 86400));
-    }
+time *updateAndGetAlarmTime(void) {
+    ticksToTime(alarmTime, alarmTimeStruct);
+    return alarmTimeStruct;
+}
+
+void addSecondsAlarm(long int newSeconds) {
+    alarmTime = alarmTime + newSeconds;
+    alarmTime = (alarmTime % 86400);
 }
 
 void checkAlarm(void) {
-    if (currentAlarmState != alarmEnabled) {
-        return;
+    if (currentAlarmState == alarmEnabled) {
+        if (alarmTime == clockSeconds) {
+            currentAlarmState = alarmSounding;
+            alarmStart = getInterrupts();
+        }
     }
-    if (alarmTime == getClockTicks()) {
-        currentAlarmState = alarmSounding;
+    else if (currentAlarmState == alarmSounding) {
+        long int thirtySecondsAgo = getInterrupts() - 30 * ticksPerSecond;
+        if (thirtySecondsAgo < 0) {
+            thirtySecondsAgo = LONG_MAX - thirtySecondsAgo;
+        }
+        if (thirtySecondsAgo >= alarmStart) {
+            enableAlarm();
+        }
     }
 }
 
 alarmState getAlarmState(void) {
     return currentAlarmState;
+}
+
+bool showAlarmLed(void) {
+    return (currentAlarmState == alarmSounding && (clockSeconds % 2) != 0);
 }

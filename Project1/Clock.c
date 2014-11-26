@@ -11,32 +11,44 @@
 #include <string.h>
 #include <stdlib.h>
 #include <stdio.h>
+#include <malloc.h>
 
 typedef enum { clockDisabled, clockRunning } clockState;
 
 clockState currentClockState;
 long int clockTicks;
+time * clockTimeStruct;
+long int clockSeconds;
 
 void initClock(void) {
+    clockTimeStruct = (time *) malloc(sizeof (time));
+    clockTimeStruct->hours = 0;
+    clockTimeStruct->minutes = 0;
+    clockTimeStruct->seconds = 0;
+    clockTimeStruct->secondsOfTheDay = 0;
     currentClockState = clockDisabled;
-    clockTicks = 80000L;
+    clockTicks = 0;
+    clockSeconds = 0;
 }
 
 void tickClock(void) {
     if (currentClockState == clockRunning) {
-        if (LONG_MAX - 1 >= clockTicks) {
-            clockTicks++;
-            clockTicks = (clockTicks % (getClockTicksPerSecond() * 86400));
+        clockTicks++;
+        if (clockTicks == ticksPerSecond) {
+            clockSeconds++;
+            clockTicks = 0;
         }
     }
 }
 
-void addTicksClock(long int newTicks) {
-    if (ULONG_MAX - newTicks >= clockTicks) {
-        clockTicks = clockTicks + newTicks;
-        clockTicks = (clockTicks % (getClockTicksPerSecond() * 86400));
-    }
+void checkClockNewDay(void) {
+    clockSeconds = (clockSeconds % 86400);
 }
+
+void addSecondsClock(long int newSeconds) {
+    clockSeconds = clockSeconds + newSeconds;
+}
+
 void enableClock(void) {
     currentClockState = clockRunning;
 }
@@ -44,27 +56,28 @@ void disableClock(void) {
     currentClockState = clockDisabled;
 }
 
-char* getClockTime(void) {
-	char clockTimeString[16];
-    return ticksToTime(clockTicks, clockTimeString);
+time * updateAndGetClockTime(void) {
+    checkClockNewDay();
+    ticksToTime(clockSeconds, clockTimeStruct);
+    return clockTimeStruct;
 }
 
-long int getClockTicks(void) {
-    return clockTicks;
+void ticksToTime(long int secondsToday, time * timeStruct) {
+    long int ticksWithoutHours;
+
+    if (secondsToday == timeStruct->secondsOfTheDay) {
+        return;
+    }
+
+    timeStruct->hours = secondsToday / 3600;
+
+    ticksWithoutHours = secondsToday % 3600;
+    timeStruct->minutes = ticksWithoutHours / 60;
+    timeStruct->seconds = ticksWithoutHours % 60;
+    timeStruct->secondsOfTheDay = secondsToday;
 }
 
-char* ticksToTime(long int ticks, char* timeString) {
-    long int secondsToday = ticks / getClockTicksPerSecond();
-    int hours;
-    int minutes;
-    int seconds;
-
-    hours = secondsToday / 3600;
-    minutes = (secondsToday % 3600) / 60;
-    seconds = (secondsToday % 3600) % 60;
-
-    sprintf(timeString, "%02d:%02d:%02d", hours, minutes, seconds);
-
-    return timeString;
+bool showClockLed(void) {
+    return (currentClockState == clockRunning && ((clockTicks / (ticksPerSecond / 2)) % 2) != 0);
 }
 

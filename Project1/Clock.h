@@ -7,14 +7,18 @@
 
 #ifndef CLOCK_H_
 #define CLOCK_H_
+#include "main.h"
 
 void initClock(void);
 void tickClock(void);
-char* ticksToTime(long int ticks, char* timeString);
-char* getClockTime(void);
-void addTicksClock(long int newTicks);
+void ticksToTime(long int secondsToday, time * timeStruct);
+time *updateAndGetClockTime(void);
+void addSecondsClock(long int newSeconds);
 void enableClock(void);
 void disableClock(void);
 long int getClockTicks(void);
+bool showClockLed(void);
+
+extern long int clockSeconds;
 
 #endif /* CLOCK_H_ */

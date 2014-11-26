@@ -8,9 +8,16 @@
 #ifndef MAIN_H_
 #define MAIN_H_
 
+extern long int ticksPerSecond;
 
-#define INTERRUPTS_PER_SECOND 40
+long long getInterrupts(void);
 
-long int getClockTicksPerSecond(void);
+typedef struct {
+    int hours;
+    int minutes;
+    int seconds;
+    int secondsOfTheDay;
+}time;
 
+typedef enum { false, true } bool;
 #endif /* MAIN_H_ */

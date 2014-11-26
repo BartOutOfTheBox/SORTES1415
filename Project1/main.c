@@ -28,6 +28,8 @@
 
 void init(void);
 void initTimer(void);
+void initButtons(void);
+void initLeds(void);
 void startTimer(void);
 void updateTime();
 void displayString(BYTE pos, char* text);
@@ -122,33 +124,21 @@ void checkButtons() {
     }
 }
 
-void init(void) {
-    int lastClockSecondsPrint = -1;
-    int lastAlarmSecondsPrint = -1;
-
+void init(void)
+{
     _initHeap(heap, 256);
-    button2Pressed = False;
-    BUTTON0_TRIS = 1; //configure button0 as input
-    RCONbits.IPEN      = 1;   //enable interrupts priority levels
-    INTCON3bits.INT1P  = 1;   //connect INT1 interrupt (button 2) to high prio
-    INTCON2bits.INTEDG1= 0;   //INT1 interrupts on falling edge
+
+    lastClockSecondsPrint = -1;
+    lastAlarmSecondsPrint = -1;
+    interrupts            = 0;
+
     INTCONbits.GIE     = 1;   //enable high priority interrupts
-    INTCON3bits.INT1E  = 1;   //enable INT1 interrupt (button 2)
-    INTCON3bits.INT1F  = 0;   //clear INT1 flag
+    RCONbits.IPEN      = 1;   //enable interrupts priority levels
 
-    button1Pressed = False;
-    BUTTON1_TRIS = 1; //configure button1 as input
-    INTCON2bits.INT3IP  = 1;   //connect INT1 interrupt (button 1) to high prio
-    INTCON2bits.INTEDG3 = 0;   //INT1 interrupts on falling edge
-    INTCON3bits.INT3E   = 1;   //enable INT1 interrupt (button 1)
-    INTCON3bits.INT3IF  = 0;   //clear INT1 flag
-
-    TRISJbits.TRISJ0=0; // configure PORTJ0 for output (LED)
-    TRISJbits.TRISJ1=0; // configure PORTJ1 for output (LED)
-    LATJbits.LATJ0=0;
-    LATJbits.LATJ1=0;
-
+    initButtons();
+    initLeds();
     LCDInit();
+
     startTimeEdit();
     initClock();
     initAlarm();
@@ -157,9 +147,33 @@ void init(void) {
     stateChange = True;
 }
 
+void initButtons(void)
+{
+    button2Pressed      = False;
+    BUTTON0_TRIS        = 1; //configure button0 as input
+    INTCON3bits.INT1P   = 1;   //connect INT1 interrupt (button 2) to high prio
+    INTCON2bits.INTEDG1 = 0;   //INT1 interrupts on falling edge
+    INTCON3bits.INT1E   = 1;   //enable INT1 interrupt (button 2)
+    INTCON3bits.INT1F   = 0;   //clear INT1 flag
+
+    button1Pressed      = False;
+    BUTTON1_TRIS        = 1; //configure button1 as input
+    INTCON2bits.INT3IP  = 1;   //connect INT1 interrupt (button 1) to high prio
+    INTCON2bits.INTEDG3 = 0;   //INT1 interrupts on falling edge
+    INTCON3bits.INT3E   = 1;   //enable INT1 interrupt (button 1)
+    INTCON3bits.INT3IF  = 0;   //clear INT1 flag
+}
+
+void initLeds(void)
+{
+    TRISJbits.TRISJ0    = 0; // configure PORTJ0 for output (LED)
+    TRISJbits.TRISJ1    = 0; // configure PORTJ1 for output (LED)
+    LATJbits.LATJ0      = 0;
+    LATJbits.LATJ1      = 0;
+}
+
 void initTimer(void)
 {
-    interrupts = 0;
     TMR0H = 0x00000000;
     TMR0L = 0x00000000;
     T0CONbits.TMR0ON=0; // disable timer0

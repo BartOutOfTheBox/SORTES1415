@@ -1,5 +1,5 @@
 /*
- * Alarm.h
+ * alarm.h
  *
  *  Created on: 26-nov.-2014
  *      Author: Arne
@@ -7,17 +7,18 @@
 
 #ifndef ALARM_H_
 #define ALARM_H_
-#include "main.h"
 
-typedef enum { alarmUnset, alarmDisabled, alarmSounding, alarmEnabled } alarmState;
+#include "main.h"
+#include "time.h"
 
 void initAlarm(void);
-time * updateAndGetAlarmTime(void);
-void disableAlarm(void);
+bool isAlarmSounding(void);
+bool isAlarmSet(void);
 void enableAlarm(void);
-alarmState getAlarmState(void);
-void checkAlarm(void);
-void addSecondsAlarm(long int newSeconds);
-bool showAlarmLed(void);
+void disableAlarm(void);
+void updateAlarm(void);
+void addSecondsToAlarm(long int newSeconds);
+time_t *updateAndGetAlarmTime(void);
+bool shouldTurnOnAlarmLed(void);
 
 #endif /* ALARM_H_ */

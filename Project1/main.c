@@ -217,6 +217,8 @@ void startDisplay(void) {
 }
 
 void updateClock(void) {
+    checkAlarm();
+
     if (stateChange) {
         stateChange = false;
         LCDErase();
@@ -330,7 +332,6 @@ void HighISR(void) __interrupt 1
         }
         interrupts++;
         tickClock();
-        checkAlarm();
     }
     if(INTCON3bits.INT1F)
     {

@@ -15,7 +15,8 @@
 
 alarmState currentAlarmState;
 
-int alarmStart;
+long int alarmStart;
+long int alarmEnd;
 
 time * alarmTimeStruct;
 long int alarmTime;
@@ -52,17 +53,12 @@ void checkAlarm(void) {
     if (currentAlarmState == alarmEnabled) {
         if (alarmTime == clockSeconds) {
             currentAlarmState = alarmSounding;
-            alarmStart = getInterrupts();
+            alarmStart = alarmTime;
+            alarmEnd = (clockSeconds + 30) % 86400;
         }
     }
-    else if (currentAlarmState == alarmSounding) {
-        long int thirtySecondsAgo = getInterrupts() - 30 * ticksPerSecond;
-        if (thirtySecondsAgo < 0) {
-            thirtySecondsAgo = LONG_MAX - thirtySecondsAgo;
-        }
-        if (thirtySecondsAgo >= alarmStart) {
-            enableAlarm();
-        }
+    else if (currentAlarmState == alarmSounding && clockSeconds == alarmEnd) {
+        currentAlarmState = alarmEnabled;
     }
 }
 

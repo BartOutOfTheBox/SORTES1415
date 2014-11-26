@@ -36,17 +36,16 @@ void tickClock(void) {
         clockTicks++;
         if (clockTicks == ticksPerSecond) {
             clockSeconds++;
+            if (clockSeconds >= 86400) {
+                clockSeconds = clockSeconds % 86400;
+            }
             clockTicks = 0;
         }
     }
 }
 
-void checkClockNewDay(void) {
-    clockSeconds = (clockSeconds % 86400);
-}
-
 void addSecondsClock(long int newSeconds) {
-    clockSeconds = clockSeconds + newSeconds;
+    clockSeconds = (clockSeconds + newSeconds) % 86400;
 }
 
 void enableClock(void) {
@@ -57,7 +56,6 @@ void disableClock(void) {
 }
 
 time * updateAndGetClockTime(void) {
-    checkClockNewDay();
     ticksToTime(clockSeconds, clockTimeStruct);
     return clockTimeStruct;
 }

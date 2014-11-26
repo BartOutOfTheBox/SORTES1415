@@ -10,13 +10,11 @@
 
 void initClock(void);
 void tickClock(void);
-char* ticksToTime(unsigned long int);
-char* getClockTime();
-void addHour(void);
-void addMin(void);
-void addSec(void);
-void addTicksClock(unsigned long int);
+char* ticksToTime(long int ticks);
+char* getClockTime(void);
+void addTicksClock(long int newTicks);
 void enableClock(void);
 void disableClock(void);
+long int getClockTicks(void);
 
 #endif /* CLOCK_H_ */

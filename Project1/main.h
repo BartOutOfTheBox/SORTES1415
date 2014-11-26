@@ -11,6 +11,6 @@
 
 #define INTERRUPTS_PER_SECOND 40
 
-unsigned long int clockTicksPerSeconds = INTERRUPTS_PER_SECOND;
+long int getClockTicksPerSecond(void);
 
 #endif /* MAIN_H_ */

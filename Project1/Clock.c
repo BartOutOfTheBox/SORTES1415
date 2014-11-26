@@ -15,41 +15,27 @@
 typedef enum { clockDisabled, clockRunning } clockState;
 
 clockState currentClockState;
-
-unsigned long int clockTicks;
-unsigned long int getNbTicksClock(void);
+long int clockTicks;
 
 void initClock(void) {
     currentClockState = clockDisabled;
-    clockTicks = 0;
+    clockTicks = 80000L;
 }
 
 void tickClock(void) {
     if (currentClockState == clockRunning) {
-        if (ULONG_MAX - 1 >= clockTicks) {
+        if (LONG_MAX - 1 >= clockTicks) {
             clockTicks++;
-            clockTicks = (clockTicks % (clockTicksPerSeconds * 86400));
+            clockTicks = (clockTicks % (getClockTicksPerSecond() * 86400));
         }
     }
 }
 
-unsigned long int getNbTicksClock(void) {
-    return clockTicks;
-}
-void addTicksClock(unsigned long int newTicks) {
+void addTicksClock(long int newTicks) {
     if (ULONG_MAX - newTicks >= clockTicks) {
         clockTicks = clockTicks + newTicks;
-        clockTicks = (clockTicks % (clockTicksPerSeconds * 86400));
+        clockTicks = (clockTicks % (getClockTicksPerSecond() * 86400));
     }
-}
-void addHour(void) {
-    addTicksClock(clockTicksPerSeconds * 3600);
-}
-void addMin(void) {
-    addTicksClock(clockTicksPerSeconds * 60);
-}
-void addSec(void) {
-    addTicksClock(clockTicksPerSeconds);
 }
 void enableClock(void) {
     currentClockState = clockRunning;
@@ -59,11 +45,27 @@ void disableClock(void) {
 }
 
 char* getClockTime(void) {
-    return ticksToTime(clockTicks);
+    long int secondsToday = clockTicks / getClockTicksPerSecond();
+    int hours;
+    int minutes;
+    int seconds;
+    char clockTimeString[16];
+
+    hours = secondsToday / 3600;
+    minutes = (secondsToday % 3600) / 60;
+    seconds = (secondsToday % 3600) % 60;
+
+    sprintf(clockTimeString, "%02d:%02d:%02d", hours, minutes, seconds);
+
+    return clockTimeString;
 }
 
-char* ticksToTime(unsigned long int clockTicks) {
-    unsigned long int secondsToday = clockTicks / clockTicksPerSeconds;
+long int getClockTicks(void) {
+    return clockTicks;
+}
+
+char* ticksToTime(long int ticks) {
+    long int secondsToday = ticks / getClockTicksPerSecond();
     int hours;
     int minutes;
     int seconds;
@@ -77,3 +79,4 @@ char* ticksToTime(unsigned long int clockTicks) {
 
     return timeString;
 }
+

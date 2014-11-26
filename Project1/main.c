@@ -8,7 +8,6 @@
 
 #define __18F97J60
 #define __SDCC__
-#define INTERRUPTS_PER_SECOND 24318
 
 #include "Include/HardwareProfile.h"
 
@@ -25,6 +24,7 @@
 #include "Clock.h"
 #include "Alarm.h"
 #include <malloc.h>
+#include "time.h"
 
 void init(void);
 void initTimer(void);
@@ -41,7 +41,6 @@ void checkButtons(void);
 unsigned char _MALLOC_SPEC heap[256];
 
 long int interrupts;
-long int ticksPerSecond = INTERRUPTS_PER_SECOND;
 volatile bool stateChange;
 
 typedef enum { editHours, editMin, editSec, noEdit } editState;
@@ -257,8 +256,8 @@ void blinkTimeEdit(char* timeString) {
 void updateTime(void)
 {
     bool update = false;
-    time *clockTimeStruct = updateAndGetClockTime();
-    time *alarmTimeStruct = updateAndGetAlarmTime();
+    time_t *clockTimeStruct = updateAndGetClockTime();
+    time_t *alarmTimeStruct = updateAndGetAlarmTime();
     char clockTimeString[8];
     char alarmTimeString[8];
 

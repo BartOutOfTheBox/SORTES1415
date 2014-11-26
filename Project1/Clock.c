@@ -12,16 +12,17 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <malloc.h>
+#include "time.h"
 
 typedef enum { clockDisabled, clockRunning } clockState;
 
 clockState currentClockState;
 long int clockTicks;
-time * clockTimeStruct;
+time_t * clockTimeStruct;
 long int clockSeconds;
 
 void initClock(void) {
-    clockTimeStruct = (time *) malloc(sizeof (time));
+    clockTimeStruct = (time_t *) malloc(sizeof (time_t));
     clockTimeStruct->hours = 0;
     clockTimeStruct->minutes = 0;
     clockTimeStruct->seconds = 0;
@@ -55,12 +56,12 @@ void disableClock(void) {
     currentClockState = clockDisabled;
 }
 
-time * updateAndGetClockTime(void) {
-    ticksToTime(clockSeconds, clockTimeStruct);
+time_t * updateAndGetClockTime(void) {
+    updateTimeStruct(clockSeconds, clockTimeStruct);
     return clockTimeStruct;
 }
 
-void ticksToTime(long int secondsToday, time * timeStruct) {
+void ticksToTime(long int secondsToday, time_t * timeStruct) {
     long int ticksWithoutHours;
 
     if (secondsToday == timeStruct->secondsOfTheDay) {

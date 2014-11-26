@@ -7,7 +7,7 @@ LDFLAGS= -mpic16 -p18f97j60 -L/usr/local/lib/pic16 -llibio18f97j60.lib \
 AR = ar
 RM = rm
 
-OBJECTS= Objects/Clock.o Objects/Alarm.o Objects/LCDBlocking.o
+OBJECTS= Objects/Clock.o Objects/Alarm.o Objects/time.o Objects/LCDBlocking.o
 
 SDCC_HEADERS=/usr/local/share/sdcc/include/string.h \
    /usr/local/share/sdcc/include/stdlib.h \
@@ -34,6 +34,10 @@ Objects/main.o : main.c $(SDCC_HEADERS) $(SDCC_PIC16_HEADERS) \
 Objects/Clock.o : Clock.c $(SDCC_HEADERS) $(SDCC_PIC16_HEADERS) \
    $(APP_HEADERS) $(TCPIP_HEADERS)
 	$(CC) $(CFLAGS) Clock.c
+	
+Objects/time.o : time.c $(SDCC_HEADERS) $(SDCC_PIC16_HEADERS) \
+   $(APP_HEADERS) $(TCPIP_HEADERS)
+	$(CC) $(CFLAGS) time.c
 	
 Objects/Alarm.o : Alarm.c $(SDCC_HEADERS) $(SDCC_PIC16_HEADERS) \
    $(APP_HEADERS) $(TCPIP_HEADERS)

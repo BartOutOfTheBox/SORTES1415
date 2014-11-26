@@ -12,17 +12,18 @@
 #include "main.h"
 #include "Clock.h"
 #include <malloc.h>
+#include "time.h"
 
 alarmState currentAlarmState;
 
 long int alarmStart;
 long int alarmEnd;
 
-time * alarmTimeStruct;
+time_t * alarmTimeStruct;
 long int alarmTime;
 
 void initAlarm(void) {
-    alarmTimeStruct = (time *) malloc(sizeof (time));
+    alarmTimeStruct = (time_t *) malloc(sizeof (time_t));
     alarmTimeStruct->hours = 0;
     alarmTimeStruct->minutes = 0;
     alarmTimeStruct->seconds = 0;
@@ -39,8 +40,8 @@ void disableAlarm(void) {
     currentAlarmState = alarmDisabled;
 }
 
-time *updateAndGetAlarmTime(void) {
-    ticksToTime(alarmTime, alarmTimeStruct);
+time_t *updateAndGetAlarmTime(void) {
+    updateTimeStruct(alarmTime, alarmTimeStruct);
     return alarmTimeStruct;
 }
 

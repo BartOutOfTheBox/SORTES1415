@@ -16,6 +16,8 @@
 
 #include "Include/HardwareProfile.h"
 #include "Include/LCDBlocking.h"
+#include <pic18fregs.h>  //defines the address corresponding to the symbolic
+                         //names of the sfr
 
 #include "time.h"
 #include "main.h"
@@ -222,19 +224,19 @@ void updateBoard(void) {
         stateChange = False;
         LCDErase();
         if (currentState == Display) {
-//            displayString(0, "Time:");
-//            displayString(16, "Alarm:");
+            displayString(0, "Time:");
+            displayString(16, "Alarm:");
         }
         else if (currentState == SetAlarm) {
-//            displayString(0, "Enter the alarm");
-//            displayString(16, "Alarm:");
+            displayString(0, "Enter the alarm");
+            displayString(16, "Alarm:");
         }
         else if (currentState == SetTime) {
-//            displayString(16, "Enter the time");
-//            displayString(0, "Time:");
+            displayString(16, "Enter the time");
+            displayString(0, "Time:");
         }
     }
-//    LCDUpdate();
+    LCDUpdate();
 
     updateTimeDisplay();
     updateLeds();
@@ -276,71 +278,55 @@ void blinkTimeEdit(char* timeString) {
 
 void updateTimeDisplay(void)
 {
-//    bool update = False;
-//    time_t *clockTime = updateAndGetClockTime();
-//    time_t *alarmTime = updateAndGetAlarmTime();
-//    char clockTimeString[8];
-//    char alarmTimeString[8];
-//
-//    sprintf(clockTimeString, "%02d:%02d:%02d", clockTime->hours, clockTime->minutes, clockTime->seconds);
-//    sprintf(alarmTimeString, "%02d:%02d:%02d", alarmTime->hours, alarmTime->minutes, alarmTime->seconds);
-//
-//    if (currentState == SetTime) {
-//        blinkTimeEdit(clockTimeString);
-//        displayString(7, clockTimeString);
-//        update = True;
-//    }
-//    else if (currentState == SetAlarm) {
-//        blinkTimeEdit(alarmTimeString);
-//        displayString(23, alarmTimeString);
-//        update = True;
-//    }
-//    else {
-//        if (lastClockSecondsPrint != clockTime->secondsOfTheDay) {
-//            update = True;
-//        }
-//        if (lastAlarmSecondsPrint != alarmTime->secondsOfTheDay) {
-//            update = True;
-//        }
-//        displayString(7, clockTimeString);
-//        displayString(23, alarmTimeString);
-//        lastClockSecondsPrint = clockTime->secondsOfTheDay;
-//        lastAlarmSecondsPrint = alarmTime->secondsOfTheDay;
-//    }
-//    if (update) {
-//        LCDUpdate();
-//    }
-    char debug[16];
-    sprintf("%ld", interrupts);
-    displayString(0, debug);
-    LCDUpdate();
+    bool update = False;
+    time_t *clockTime = updateAndGetClockTime();
+    time_t *alarmTime = updateAndGetAlarmTime();
+    char clockTimeString[8];
+    char alarmTimeString[8];
+
+    sprintf(clockTimeString, "%02d:%02d:%02d", clockTime->hours, clockTime->minutes, clockTime->seconds);
+    sprintf(alarmTimeString, "%02d:%02d:%02d", alarmTime->hours, alarmTime->minutes, alarmTime->seconds);
+
+    if (currentState == SetTime) {
+        blinkTimeEdit(clockTimeString);
+        displayString(7, clockTimeString);
+        update = True;
+    }
+    else if (currentState == SetAlarm) {
+        blinkTimeEdit(alarmTimeString);
+        displayString(23, alarmTimeString);
+        update = True;
+    }
+    else {
+        if (lastClockSecondsPrint != clockTime->secondsOfTheDay) {
+            update = True;
+        }
+        if (lastAlarmSecondsPrint != alarmTime->secondsOfTheDay) {
+            update = True;
+        }
+        displayString(7, clockTimeString);
+        displayString(23, alarmTimeString);
+        lastClockSecondsPrint = clockTime->secondsOfTheDay;
+        lastAlarmSecondsPrint = alarmTime->secondsOfTheDay;
+    }
+    if (update) {
+        LCDUpdate();
+    }
 }
 
 void updateLeds(void) {
-    if (currentState == SetTime) {
-        LATJbits.LATJ0=1;
+    if (shouldTurnOnClockLed()) {
+        LATJbits.LATJ0=1; // switch LED 1 on
     }
     else {
-        LATJbits.LATJ0=0;
+        LATJbits.LATJ0=0; // switch LED 1 off
     }
-    if (currentState == SetAlarm) {
-        LATJbits.LATJ1=1;
+    if (shouldTurnOnAlarmLed()) {
+        LATJbits.LATJ1=1; // switch LED 2 on
     }
     else {
-        LATJbits.LATJ1=0;
+        LATJbits.LATJ1=0; // switch LED 2 off
     }
-//    if (shouldTurnOnClockLed()) {
-//        LATJbits.LATJ0=1; // switch LED 1 on
-//    }
-//    else {
-//        LATJbits.LATJ0=0; // switch LED 1 off
-//    }
-//    if (shouldTurnOnAlarmLed()) {
-//        LATJbits.LATJ1=1; // switch LED 2 on
-//    }
-//    else {
-//        LATJbits.LATJ1=0; // switch LED 2 off
-//    }
 }
 
 void LowISR(void) __interrupt 2

@@ -11,3 +11,17 @@
 .buildpath
 /.settings
 /target
+
+# Output
+*.aux
+*.log
+*.gz
+*.toc
+*.pdf
+*.out
+*.dvi
+*.bbl
+*.blg
+*.xml
+*.bib
+*.thm

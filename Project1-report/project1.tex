@@ -1,0 +1,207 @@
+\documentclass[11pt,a4paper]{scrartcl}
+\usepackage[utf8]{inputenc}
+\usepackage[english]{babel}
+\usepackage{graphicx}
+\usepackage{geometry}
+\usepackage{fancyhdr}
+\usepackage[table]{xcolor}
+\usepackage{mathtools}
+\usepackage{logicpuzzle}
+\usepackage{listings}
+\usepackage{hyperref}
+\usepackage[toc,page]{appendix}
+\hypersetup{
+    colorlinks,
+    citecolor=black,
+    filecolor=black,
+    linkcolor=black,
+    urlcolor=black
+}
+
+ 
+\usepackage{fancyhdr} % Custom headers and footers
+\pagestyle{fancyplain} % Makes all pages in the document conform to the custom headers and footers
+\fancyhead{} % No page header - if you want one, create it in the same way as the footers below
+\fancyfoot[L]{} % Empty left footer
+\fancyfoot[C]{} % Empty center footer
+\fancyfoot[R]{\thepage} % Page numbering for right footer
+\renewcommand{\headrulewidth}{0pt} % Remove header underlines
+\renewcommand{\footrulewidth}{0pt} % Remove footer underlines
+\setlength{\headheight}{13.6pt} % Customize the height of the header
+%
+\lstset{ %
+  basicstyle=\footnotesize,        % the size of the fonts that are used for the code
+  breakatwhitespace=false,         % sets if automatic breaks should only happen at whitespace
+  breaklines=true,                 % sets automatic line breaking
+  captionpos=b,                    % sets the caption-position to bottom
+  deletekeywords={...},            % if you want to delete keywords from the given language
+  extendedchars=true,              % lets you use non-ASCII characters; for 8-bits encodings only, does not work with UTF-8
+  frame=single,                    % adds a frame around the code
+  keepspaces=true,                 % keeps spaces in text, useful for keeping indentation of code (possibly needs columns=flexible)
+                keywordstyle=\color{blue},
+                stringstyle=\color{red},
+                commentstyle=\color{green},
+                morecomment=[l][\color{magenta}]{\#},
+  language=C,                 % the language of the code
+  showspaces=false,                % show spaces everywhere adding particular underscores; it overrides 'showstringspaces'
+  showstringspaces=false,          % underline spaces within strings only
+  showtabs=false,                  % show tabs within strings adding particular underscores
+  tabsize=4,                       % sets default tabsize to 2 spaces
+}
+
+\begin{document}
+\lstset{language=Prolog,basicstyle=\footnotesize}
+\renewcommand\lstlistingname{Code}
+\DeclarePairedDelimiter{\ceil}{\lceil}{\rceil}
+\definecolor{lgray}{gray}{0.65}
+\definecolor{llgray}{gray}{0.90}
+
+\newcommand{\horrule}[1]{\rule{\linewidth}{#1}} % Create horizontal rule command with 1 argument of height
+
+\title{
+\normalfont \normalsize
+\textsc{KU Leuven} \\ [25pt] % Your university, school and/or department name(s)
+\horrule{0.5pt} \\[0.4cm] % Thin top horizontal rule
+\huge SORTES: Alarm Clock \\ % The assignment title
+\horrule{2pt} \\[0.5cm] % Thick bottom horizontal rule
+}
+ 
+\author{Bart Verhoeven \& Arne Van der Stappen} % Your name
+ 
+\date{\normalsize November 26, 2014} % Today's date or a custom date
+ 
+\maketitle % Print the title
+
+\tableofcontents
+
+\newpage
+
+\section{User guide \label{sec:userguide}}
+When you start up the board, you will first be asked to set the time and next to set the alarm.
+
+\section{Set Time}
+The first thing you need to set when starting up the board is the current time.\\
+You can also change this afterwards when you are in the main display by pressing Button 2 (top button).
+
+While changing the current time, the clock will stop running and not advance.\\
+Similary, the alarm will be disabled while you are changing the current time.
+
+When setting the time, the part of the time you are currently editing will blink.\\
+To increase it, press Button 2 (top button).\\
+To move to the next part, press Button 1 (bottom button).
+
+If you have set the seconds and the alarm is not yet set, you will be prompted to set the alarm. Otherwise, you will return to the main display.
+
+The yellow led (led 1) will blink according to the speed of the clock (1/2 second on, 1/2 second off) when the clock is active.
+
+\section{Set Alarm}
+You will be prompted to set the alarm after you have set the current time at startup.\\
+You can also change this afterwards when you are in the main display by pressing Button 1 (top button).
+
+The alarm will be disabled when you are editing the current time or editing the alarm.
+
+When setting the alarm, the part of the time you are currently editing will blink.\\
+To increase it, press Button 2 (top button).\\
+To move to the next part, press Button 1 (bottom button).
+
+If you have set the seconds and the alarm is not yet set, you will be prompted to set the alarm. Otherwise, you will return to the main display.
+
+When the alarm \textit{sounds}, the first red led (led 2) will blink for 30 seconds (1 second on, 1 second off).\\
+The alarm can be deactivated sooner by pressing any of the 2 buttons.
+
+\section{System Engineer guide}
+\subsection{Compile}
+To compile the program, simply type \textbf{\textit{make main}} while in the source root.
+
+\subsection{Upload to Pic}
+To upload the program to the pic, upload \textbf{\textit{main.hex}} using tftp as described in \href{http://www.foditic.org/SORTES\_14/missions/picUnixE.php}{\textbf{PIC development in C on UNIX howto}}.
+
+\subsection{Tests}
+To test the board, you can set the clock using the instructions in Section \ref{sec:userguide}.
+
+The following tests have been run to confirm the correct working of the clock:
+\begin{itemize}
+\item Set the clock and alarm and verify if clock is ticking correctly and alarm is sounding for 30s at the right time.
+\item Verify the clock can be edited after the initial setup by pressing Button 2 (top button) and that you are returned to the main display afterwards instead of having to edit the clock.
+\item Verify the alarm can be edited after the initial setup by pressing Button 1 (bottom button) and that the clock does not have to be changed first. 
+\item Verify the clock and alarm cannot be set to an invalid time.
+\item Edit the alarm right before it is supposed to sound and confirm it does not react.
+\item Edit the clock and verify the clock has been disabled.
+\item Set the clock to a right before midnight and verify the clock correctly returns to 00:00:00.
+\item Set the alarm less than 30s before midnight and verify it sounds at the correct time and gets disabled at the correct time after midnight.
+\item Verify the alarm can be disabled using any of the buttons.
+\end{itemize}
+
+\section{Design Decisions}
+
+\subsection{Interrupts vs Busy waiting}
+We have decided to use a combination of interrupts and busy waiting.\\
+Whenever the timer overflows or a button is pressed, it generates an interrupt. The timer increases the counters in the clock(s) and the buttons set a variable to indicate a button was pressed.
+
+The main loop uses busy waiting to check if a button was pressed (based on the variable) and switches states accordingly and is also responsible for updating the display and sounding the alarm if required.
+
+By using interrupts for the timer, we can let our timer run more accurately and restart it right away without being influenced much by the heavier computations done by the main loop.\\
+Using interrupts for the buttons as well means that we do not miss out on a button press should our main loop take too long or be interrupted for too long.
+
+However, by moving all the heavy computations (switching states and updating the display/leds) we can reduce the size of the interrupts to a minimum.
+
+\subsection{Free running vs Non-free running timer}
+We have chosen for a free running timer and therefor counting the number of interrupts. This means that we are do not have to take delays by calculating the next value into account. It also allows us to measure any desired interval, rather than a single interval.\\
+On top of that, it does not require us to use a prescaler to slow down the timers giving us a much higher accuracy.
+
+\subsection{8bit timer vs 16bit timer}
+Our clock counts the number of interrupts generated by an 8bit timer. These gives us a max accuracy of roughly 1/24000 of a second, compared to 1ms for a 16bit timer.
+
+
+\subsection{2 clocks: interrupts and time}
+We are using keeping track of the number of interrupts in 2 places.
+
+The main loop simply counts the \textit{total} number of interrupts received. It stores them in a \textit{long} and loops back to 0 if its value has reached the maximum value of a long.
+
+The clock also counts the number of interrupts received. Because this number is potentially large (roughly the max size of a long) and can cause overflow during setting the clock, the actual time is stored in seconds since midnight and interrupts since the last second. When the number of interrupts reaches the number of interrupts/second, it is reset and the seconds are increased.\\
+This gives us the same accuracy while removing the risk of overflow and requiring less computation in the interrupt routine to calculate when to loop back to 0 (both for the seconds at midnight and the interrupts at every second).\\
+The clock only counts the interrupts however when it is enabled.
+
+We use 2 counters to be able to turn off the clock while changing the current time while still being able to make the text blink every half second.
+
+\subsection{Measuring clock frequency}
+To measure the clock frequency, the board was started with an initial time of 00:00:00 and a guess of around 24000 interrupts per second alongside a reliable external clock. After 8 to 10 hours, the displayed time was compared with the time elapsed on the external clock.\\
+Based on the displayed time, the number of interrupts could be determined with a worst case error of 12000 interrupts.\\
+Based on the elapsed time on the external error, the number of interrupts per real seconds can be calculated. This number was 24412.21 interrupts per second.\\
+When ticking 4 seconds at 24412 and 1 second at 24413, the error is 0.01 tick per second on the calculated time. Combined with the possible measure error, the worst case error is 0.4 ticks/s. Converting this to hours results in a possible error of 1s every 16 hours.
+
+Because this error is mostly due to the inaccuracy of the measurements, the only way to improve this is by having more accurate measurements.\\
+This could be achieved by measuring the time over a much larger interval to reduce the effect of the measurement errors.\\
+Another option is to use an external device (e.g. connected computer) with a reliable clock to run the clock for an precise time (e.g. exactly 10s). This would give a much more accurate measurement with the only errors the (tiny) error in the clock of the external device and the delay between sending and receiving the commands to start/stop by the board (which would be equally tiny). 
+
+
+\newpage
+
+\appendix
+\section{Code}
+
+\subsection{main.h}
+\lstinputlisting[language=C]{../Project1/main.h}
+
+\subsection{main.c}
+\lstinputlisting[language=C]{../Project1/main.c}
+
+\subsection{time.h}
+\lstinputlisting[language=C]{../Project1/time.h}
+
+\subsection{time.c}
+\lstinputlisting[language=C]{../Project1/time.c}
+
+\subsection{clock.h}
+\lstinputlisting[language=C]{../Project1/clock.h}
+
+\subsection{clock.c}
+\lstinputlisting[language=C]{../Project1/clock.c}
+
+\subsection{alarm.h}
+\lstinputlisting[language=C]{../Project1/alarm.h}
+
+\subsection{alarm.c}
+\lstinputlisting[language=C]{../Project1/alarm.c}
+
+\end{document}

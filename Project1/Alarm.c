@@ -10,8 +10,8 @@
 #include "main.h"
 #include "Clock.h"
 
-typedef enum { AlarmDisabled, AlarmSounding, AlarmEnabled, AlarmUnset } alarmState;
-alarmState currentAlarmState;
+typedef enum { AlarmDisabled, AlarmSounding, AlarmEnabled, AlarmUnset } alarmState_t;
+alarmState_t currentAlarmState;
 
 long int alarmEnd;
 long int alarmTime;
@@ -20,13 +20,13 @@ time_t *alarmTimeStruct;
 
 void initAlarm(void)
 {
-    alarmTimeStruct = (time_t *) malloc(sizeof (time_t));
-    alarmTimeStruct->hours = 0;
-    alarmTimeStruct->minutes = 0;
-    alarmTimeStruct->seconds = 0;
+    alarmTimeStruct                  = (time_t *) malloc(sizeof (time_t));
+    alarmTimeStruct->hours           = 0;
+    alarmTimeStruct->minutes         = 0;
+    alarmTimeStruct->seconds         = 0;
     alarmTimeStruct->secondsOfTheDay = 0;
-    alarmTime = 0;
-    currentAlarmState = AlarmUnset;
+    alarmTime                        = 0;
+    currentAlarmState                = AlarmUnset;
 }
 
 bool isAlarmSounding(void)
@@ -52,12 +52,12 @@ void disableAlarm(void)
 void updateAlarm(void)
 {
     if (currentAlarmState == AlarmEnabled) {
-        if (alarmTime == clockSeconds) {
+        if (alarmTime == getClockSeconds()) {
             currentAlarmState = AlarmSounding;
-            alarmEnd = (clockSeconds + 30) % 86400;
+            alarmEnd = (getClockSeconds() + 30) % 86400;
         }
     }
-    else if (currentAlarmState == AlarmSounding && clockSeconds == alarmEnd) {
+    else if (currentAlarmState == AlarmSounding && getClockSeconds() == alarmEnd) {
         currentAlarmState = AlarmEnabled;
     }
 }
@@ -75,6 +75,6 @@ time_t *updateAndGetAlarmTime(void)
 
 bool showAlarmLed(void)
 {
-    return (currentAlarmState == AlarmSounding && (clockSeconds % 2) == (alarmTime % 2));
+    return (currentAlarmState == AlarmSounding && (getClockSeconds() % 2) == (alarmTime % 2));
 }
 

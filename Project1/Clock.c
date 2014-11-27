@@ -14,14 +14,15 @@
 #include <malloc.h>
 #include "time.h"
 
-typedef enum { ClockDisabled, ClockRunning } clockState;
+typedef enum { ClockDisabled, ClockRunning } clockState_t;
 
-clockState currentClockState;
 long int clockTicks;
-time_t * clockTimeStruct;
 long int clockSeconds;
+clockState_t currentClockState;
+time_t * clockTimeStruct;
 
-void initClock(void) {
+void initClock(void)
+{
     clockTimeStruct = (time_t *) malloc(sizeof (time_t));
     clockTimeStruct->hours = 0;
     clockTimeStruct->minutes = 0;
@@ -32,51 +33,49 @@ void initClock(void) {
     clockSeconds = 0;
 }
 
-void tickClock(void) {
+void enableClock(void)
+{
+    currentClockState = ClockRunning;
+}
+
+void disableClock(void)
+{
+    currentClockState = ClockDisabled;
+}
+
+long int getClockSeconds(void)
+{
+    return clockSeconds;
+}
+
+void tickClock(void)
+{
     if (currentClockState == ClockRunning) {
         clockTicks++;
-        if (clockTicks == ticksPerSecond) {
+        if (clockTicks >= ticksPerSecond) {
             clockSeconds++;
             if (clockSeconds >= 86400) {
                 clockSeconds = clockSeconds % 86400;
             }
-            clockTicks = 0;
+            clockTicks = clockTicks % ticksPerSecond;
         }
     }
 }
 
-void addSecondsToClock(long int newSeconds) {
+void addSecondsToClock(long int newSeconds)
+{
     clockSeconds = (clockSeconds + newSeconds) % 86400;
 }
 
-void enableClock(void) {
-    currentClockState = ClockRunning;
-}
-void disableClock(void) {
-    currentClockState = ClockDisabled;
-}
 
-time_t * updateAndGetClockTime(void) {
+time_t *updateAndGetClockTime(void)
+{
     updateTimeStruct(clockSeconds, clockTimeStruct);
     return clockTimeStruct;
 }
 
-void ticksToTime(long int secondsToday, time_t * timeStruct) {
-    long int ticksWithoutHours;
-
-    if (secondsToday == timeStruct->secondsOfTheDay) {
-        return;
-    }
-
-    timeStruct->hours = secondsToday / 3600;
-
-    ticksWithoutHours = secondsToday % 3600;
-    timeStruct->minutes = ticksWithoutHours / 60;
-    timeStruct->seconds = ticksWithoutHours % 60;
-    timeStruct->secondsOfTheDay = secondsToday;
-}
-
-bool showClockLed(void) {
-    return (currentClockState == ClockRunning && ((clockTicks / (ticksPerSecond / 2)) % 2) != 0);
+bool showClockLed(void)
+{
+    return (currentClockState == ClockRunning && (clockTicks < ticksPerSecond / 2));
 }
 

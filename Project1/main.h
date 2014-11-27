@@ -1,8 +1,10 @@
 /*
- * main.h
+ * 	main.h
+ *
+ * 	H file of the main program.
  *
  *  Created on: 25-nov.-2014
- *      Author: Arne
+ *      Author: Arne Van der Stappen & Bart Verhoeven
  */
 
 #ifndef MAIN_H_

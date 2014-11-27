@@ -1,8 +1,10 @@
 /*
- * time.h
+ * 	time.h
+ *
+ *	Time in ticks to time in seconds, minutes, and hours conversion functions.
  *
  *  Created on: 26-nov.-2014
- *      Author: Arne
+ *      Author: Arne Van der Stappen & Bart Verhoeven
  */
 
 #ifndef TIME_H_
@@ -12,6 +14,8 @@
 
 extern long int ticksPerSecond;
 
+// Struct representing a time.
+// Useful for caching time conversions in human readable format.
 typedef struct {
     int hours;
     int minutes;
@@ -19,6 +23,7 @@ typedef struct {
     long int secondsOfTheDay;
 }time_t;
 
+// Convert and store time in ticks to time in hours, minutes, and seconds.
 void updateTimeStruct(long int secondsToday, time_t *timeStruct);
 
 #endif /* TIME_H_ */

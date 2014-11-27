@@ -25,3 +25,10 @@
 *.xml
 *.bib
 *.thm
+
+# Vagrant
+Vagrantfile
+/.vagrant
+
+# Windows crap
+*~

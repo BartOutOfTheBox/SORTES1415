@@ -4,25 +4,22 @@
  *  Created on: 26-nov.-2014
  *      Author: Arne
  */
-#include <limits.h>
-#include <string.h>
-#include <stdlib.h>
-#include <stdio.h>
+#include <malloc.h>
 #include "Alarm.h"
+#include "time.h"
 #include "main.h"
 #include "Clock.h"
-#include <malloc.h>
-#include "time.h"
 
+typedef enum { AlarmDisabled, AlarmSounding, AlarmEnabled, AlarmUnset } alarmState;
 alarmState currentAlarmState;
 
-long int alarmStart;
 long int alarmEnd;
-
-time_t * alarmTimeStruct;
 long int alarmTime;
 
-void initAlarm(void) {
+time_t *alarmTimeStruct;
+
+void initAlarm(void)
+{
     alarmTimeStruct = (time_t *) malloc(sizeof (time_t));
     alarmTimeStruct->hours = 0;
     alarmTimeStruct->minutes = 0;
@@ -32,29 +29,31 @@ void initAlarm(void) {
     currentAlarmState = AlarmUnset;
 }
 
-void enableAlarm(void) {
+bool isAlarmSounding(void)
+{
+    return (currentAlarmState == AlarmSounding);
+}
+
+bool isAlarmSet(void)
+{
+    return (currentAlarmState != AlarmUnset);
+}
+
+void enableAlarm(void)
+{
     currentAlarmState = AlarmEnabled;
 }
 
-void disableAlarm(void) {
+void disableAlarm(void)
+{
     currentAlarmState = AlarmDisabled;
 }
 
-time_t *updateAndGetAlarmTime(void) {
-    updateTimeStruct(alarmTime, alarmTimeStruct);
-    return alarmTimeStruct;
-}
-
-void addSecondsToAlarm(long int newSeconds) {
-    alarmTime = alarmTime + newSeconds;
-    alarmTime = (alarmTime % 86400);
-}
-
-void checkAlarm(void) {
+void updateAlarm(void)
+{
     if (currentAlarmState == AlarmEnabled) {
         if (alarmTime == clockSeconds) {
             currentAlarmState = AlarmSounding;
-            alarmStart = alarmTime;
             alarmEnd = (clockSeconds + 30) % 86400;
         }
     }
@@ -63,18 +62,19 @@ void checkAlarm(void) {
     }
 }
 
-alarmState getAlarmState(void) {
-    return currentAlarmState;
+void addSecondsToAlarm(long int newSeconds)
+{
+    alarmTime = (alarmTime + newSeconds) % 86400;
 }
 
-bool showAlarmLed(void) {
-    return (currentAlarmState == AlarmSounding && (clockSeconds % 2) != 0);
+time_t *updateAndGetAlarmTime(void)
+{
+    updateTimeStruct(alarmTime, alarmTimeStruct);
+    return alarmTimeStruct;
 }
 
-bool isAlarmSounding(void) {
-    return (currentAlarmState == AlarmSounding);
+bool showAlarmLed(void)
+{
+    return (currentAlarmState == AlarmSounding && (clockSeconds % 2) == (alarmTime % 2));
 }
 
-bool isAlarmSet(void) {
-    return (currentAlarmState != AlarmUnset);
-}

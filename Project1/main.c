@@ -59,7 +59,7 @@ void main(void)
     init();
     while(1) {
         checkButtons();
-        checkAlarm();
+        updateAlarm();
         updateBoard();
     }
 }

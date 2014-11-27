@@ -27,19 +27,19 @@
 
 unsigned char _MALLOC_SPEC heap[256];
 
-long int interrupts;
-volatile bool stateChange;
-bool button1Pressed;
-bool button2Pressed;
+static volatile long int interrupts;
+static volatile bool stateChange;
+static volatile bool button1Pressed;
+static volatile bool button2Pressed;
 
-typedef enum { EditHours, EditMin, EditSec, NoEdit } editState;
-editState currentEditState;
+typedef enum { EditHours, EditMin, EditSec, NoEdit } editState_t;
+static editState_t currentEditState;
 
-typedef enum { SetTime, SetAlarm, Display } state;
-state currentState;
+typedef enum { SetTime, SetAlarm, Display } state_t;
+static state_t currentState;
 
-int lastClockSecondsPrint;
-int lastAlarmSecondsPrint;
+static int lastClockSecondsPrint;
+static int lastAlarmSecondsPrint;
 
 void init(void);
 void initTimer(void);

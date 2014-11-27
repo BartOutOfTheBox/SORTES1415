@@ -16,31 +16,31 @@
 
 typedef enum { ClockDisabled, ClockRunning } clockState_t;
 
-long int clockTicks;
-long int clockSeconds;
-clockState_t currentClockState;
-time_t * clockTimeStruct;
+static volatile long int clockTicks;
+static volatile long int clockSeconds;
+static clockState_t currentState;
+static time_t *clockTimeStruct;
 
 void initClock(void)
 {
-    clockTimeStruct = (time_t *) malloc(sizeof (time_t));
-    clockTimeStruct->hours = 0;
-    clockTimeStruct->minutes = 0;
-    clockTimeStruct->seconds = 0;
-    clockTimeStruct->secondsOfTheDay = 0;
-    currentClockState = ClockDisabled;
-    clockTicks = 0;
-    clockSeconds = 0;
+    clockTimeStruct                     = (time_t *) malloc(sizeof (time_t));
+    clockTimeStruct->hours              = 0;
+    clockTimeStruct->minutes            = 0;
+    clockTimeStruct->seconds            = 0;
+    clockTimeStruct->secondsOfTheDay    = 0;
+    currentState                        = ClockDisabled;
+    clockTicks                          = 0;
+    clockSeconds                        = 0;
 }
 
 void enableClock(void)
 {
-    currentClockState = ClockRunning;
+    currentState = ClockRunning;
 }
 
 void disableClock(void)
 {
-    currentClockState = ClockDisabled;
+    currentState = ClockDisabled;
 }
 
 long int getClockSeconds(void)
@@ -50,7 +50,7 @@ long int getClockSeconds(void)
 
 void tickClock(void)
 {
-    if (currentClockState == ClockRunning) {
+    if (currentState == ClockRunning) {
         clockTicks++;
         if (clockTicks >= ticksPerSecond) {
             clockSeconds++;
@@ -76,6 +76,6 @@ time_t *updateAndGetClockTime(void)
 
 bool showClockLed(void)
 {
-    return (currentClockState == ClockRunning && (clockTicks < ticksPerSecond / 2));
+    return (currentState == ClockRunning && (clockTicks < ticksPerSecond / 2));
 }
 

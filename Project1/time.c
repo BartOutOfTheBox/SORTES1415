@@ -12,7 +12,7 @@
 
 long int ticksPerSecond = 24318;
 
-// Convert and store time in ticks to time in hours, minutes, and seconds.
+// Convert and store time in seconds to time in hours, minutes, and seconds.
 void updateTimeStruct(long int secondsToday, time_t *timeStruct) {
     long int secondsWithoutHours;
 

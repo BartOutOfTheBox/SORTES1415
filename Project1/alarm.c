@@ -33,9 +33,9 @@ typedef enum { 	AlarmDisabled,
 				AlarmUnset } alarmState_t;
 static alarmState_t currentState;
 
-// When the alarm should stop sounding, stored in ticks.
+// When the alarm should stop sounding, stored in seconds.
 static long int alarmEnd;
-// When the alarm should sound, stored in ticks.
+// When the alarm should sound, stored in seconds.
 static long int alarmTime;
 
 // A time struct representing the time the alarm should sound.
@@ -83,7 +83,7 @@ void updateAlarm(void)
     if (currentState == AlarmEnabled) {
 		// Alarm is triggered when the alarmTime's 
 		// hours, minutes, AND seconds match
-		// the number of hours, minutes, and seconds on the clock.
+		// the number of hours, minutes, and seconds since midnight.
         if (alarmTime == getClockSeconds()) {
             currentState = AlarmSounding;
 			// The alarm should sound for 30 seconds.

@@ -27,7 +27,7 @@
 
 // This is where the heap of the programm is located.
 // The size of 256 chars is more than sufficient.
-// Only two time structs have memmory allocated in the heap.
+// Only two time structs have memory allocated in the heap.
 unsigned char _MALLOC_SPEC heap[256];
 
 static volatile long int interrupts;

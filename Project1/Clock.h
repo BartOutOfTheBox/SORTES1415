@@ -14,7 +14,7 @@ void initClock(void);
 void tickClock(void);
 void ticksToTime(long int secondsToday, time_t * timeStruct);
 time_t *updateAndGetClockTime(void);
-void addSecondsClock(long int newSeconds);
+void addSecondsToClock(long int newSeconds);
 void enableClock(void);
 void disableClock(void);
 long int getClockTicks(void);

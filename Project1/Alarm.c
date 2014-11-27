@@ -45,7 +45,7 @@ time_t *updateAndGetAlarmTime(void) {
     return alarmTimeStruct;
 }
 
-void addSecondsAlarm(long int newSeconds) {
+void addSecondsToAlarm(long int newSeconds) {
     alarmTime = alarmTime + newSeconds;
     alarmTime = (alarmTime % 86400);
 }
@@ -69,4 +69,12 @@ alarmState getAlarmState(void) {
 
 bool showAlarmLed(void) {
     return (currentAlarmState == AlarmSounding && (clockSeconds % 2) != 0);
+}
+
+bool isAlarmSounding(void) {
+    return (currentAlarmState == AlarmSounding);
+}
+
+bool isAlarmSet(void) {
+    return (currentAlarmState != AlarmUnset);
 }

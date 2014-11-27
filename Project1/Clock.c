@@ -45,7 +45,7 @@ void tickClock(void) {
     }
 }
 
-void addSecondsClock(long int newSeconds) {
+void addSecondsToClock(long int newSeconds) {
     clockSeconds = (clockSeconds + newSeconds) % 86400;
 }
 

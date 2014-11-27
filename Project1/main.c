@@ -70,24 +70,24 @@ void main(void)
 void checkButtons() {
     if (button2Pressed) {
         button2Pressed = False;
-        if (getAlarmState() == AlarmSounding) {
+        if (isAlarmSounding()) {
             enableAlarm();
         }
         else if (currentState == SetTime) {
             if (currentEditState == EditHours) {
-                addSecondsClock(3600);
+                addSecondsToClock(3600);
             } else if (currentEditState == EditMin) {
-                addSecondsClock(60);
+                addSecondsToClock(60);
             } else if (currentEditState == EditSec) {
-                addSecondsClock(1);
+                addSecondsToClock(1);
             }
         } else if (currentState == SetAlarm) {
             if (currentEditState == EditHours) {
-                addSecondsAlarm(3600);
+                addSecondsToAlarm(3600);
             } else if (currentEditState == EditMin) {
-                addSecondsAlarm(60);
+                addSecondsToAlarm(60);
             } else if (currentEditState == EditSec) {
-                addSecondsAlarm(1);
+                addSecondsToAlarm(1);
             }
         } else {
             startTimeEdit();
@@ -95,7 +95,7 @@ void checkButtons() {
     }
     else if (button1Pressed) {
         button1Pressed = False;
-        if (getAlarmState() == AlarmSounding) {
+        if (isAlarmSounding()) {
             enableAlarm();
         }
         else if (currentState == SetTime || currentState == SetAlarm) {
@@ -105,7 +105,7 @@ void checkButtons() {
                 currentEditState = EditSec;
             } else if (currentEditState == EditSec) {
                 if (currentState == SetTime) {
-                    if (getAlarmState() == AlarmUnset) {
+                    if (!isAlarmSet()) {
                         enableClock();
                         startAlarmEdit();
                     }

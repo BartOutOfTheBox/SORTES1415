@@ -10,7 +10,7 @@
 #include "main.h"
 #include "time.h"
 
-typedef enum { AlarmUnset, AlarmDisabled, AlarmSounding, AlarmEnabled } alarmState;
+typedef enum { AlarmDisabled, AlarmSounding, AlarmEnabled, AlarmUnset } alarmState;
 
 void initAlarm(void);
 time_t * updateAndGetAlarmTime(void);
@@ -18,7 +18,9 @@ void disableAlarm(void);
 void enableAlarm(void);
 alarmState getAlarmState(void);
 void checkAlarm(void);
-void addSecondsAlarm(long int newSeconds);
+void addSecondsToAlarm(long int newSeconds);
 bool showAlarmLed(void);
+bool isAlarmSounding(void);
+bool isAlarmSet(void);
 
 #endif /* ALARM_H_ */

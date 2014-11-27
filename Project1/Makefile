@@ -28,30 +28,25 @@ main : Objects/main.o $(OBJECTS)
 	$(LD) $(LDFLAGS) Objects/main.o $(OBJECTS)
 
 Objects/main.o : main.c $(SDCC_HEADERS) $(SDCC_PIC16_HEADERS) \
-   $(APP_HEADERS) $(TCPIP_HEADERS)
+   $(APP_HEADERS)
 	$(CC) $(CFLAGS) main.c
 	
 Objects/Clock.o : Clock.c $(SDCC_HEADERS) $(SDCC_PIC16_HEADERS) \
-   $(APP_HEADERS) $(TCPIP_HEADERS)
+   $(APP_HEADERS)
 	$(CC) $(CFLAGS) Clock.c
 	
 Objects/time.o : time.c $(SDCC_HEADERS) $(SDCC_PIC16_HEADERS) \
-   $(APP_HEADERS) $(TCPIP_HEADERS)
+   $(APP_HEADERS)
 	$(CC) $(CFLAGS) time.c
 	
 Objects/Alarm.o : Alarm.c $(SDCC_HEADERS) $(SDCC_PIC16_HEADERS) \
-   $(APP_HEADERS) $(TCPIP_HEADERS)
+   $(APP_HEADERS)
 	$(CC) $(CFLAGS) Alarm.c
 	
 Objects/LCDBlocking.o : TCPIP_Stack/LCDBlocking.c $(SDCC_HEADERS)  \
    $(SDCC_PIC16_HEADERS) $(APP_HEADERS) $(TCPIP_HEADERS)
 	$(CC) -c -mpic16 -p18f97j60  -o"Objects/LCDBlocking.o" \
               -L/usr/local/lib/pic16  TCPIP_Stack/LCDBlocking.c
-
-Objects/Tick.o : TCPIP_Stack/Tick.c  $(SDCC_HEADERS)  \
-   $(SDCC_PIC16_HEADERS) $(APP_HEADERS) $(TCPIP_HEADERS)
-	$(CC) -c -mpic16 -p18f97j60  -o"Objects/Tick.o" \
-              -L/usr/local/lib/pic16  TCPIP_Stack/Tick.c
 
 clean : 
 	$(RM) $(OBJECTS)

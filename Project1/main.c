@@ -9,13 +9,10 @@
 #define __18F97J60
 #define __SDCC__
 
-#include <stdlib.h>
 #include <stdio.h>
+#include <string.h>
 #include <limits.h>
 #include <malloc.h>
-
-#include <pic18fregs.h>  //defines the address corresponding to the symbolic
-                         //names of the sfr
 
 #include "Include/HardwareProfile.h"
 #include "Include/LCDBlocking.h"
@@ -49,7 +46,7 @@ void startDisplay(void);
 void startTimeEdit(void);
 void startAlarmEdit(void);
 void checkButtons(void);
-void updateTimeDisplay();
+void updateTimeDisplay(bool forceUpdate);
 void updateBoard(void);
 void updateLeds(void);
 void displayString(BYTE pos, char* text);
@@ -222,9 +219,12 @@ void checkButtons()
 
 void updateBoard(void)
 {
+    bool updateDisplay = False;
     if (stateChange) {
         stateChange = False;
-        LCDErase();
+        updateDisplay = True;
+        memset(LCDText, ' ', 32);
+
         if (currentState == Display) {
             displayString(0, "Time:");
             displayString(16, "Alarm:");
@@ -237,9 +237,8 @@ void updateBoard(void)
             displayString(16, "Enter the time");
             displayString(0, "Time:");
         }
-        LCDUpdate();
     }
-    updateTimeDisplay();
+    updateTimeDisplay(updateDisplay);
     updateLeds();
 }
 
@@ -278,7 +277,7 @@ void blinkTimeEdit(char* timeString)
     }
 }
 
-void updateTimeDisplay(void)
+void updateTimeDisplay(bool forceUpdate)
 {
     bool update = False;
     time_t *clockTimeStruct = updateAndGetClockTime();
@@ -311,7 +310,7 @@ void updateTimeDisplay(void)
         lastClockSecondsPrint = clockTimeStruct->secondsOfTheDay;
         lastAlarmSecondsPrint = alarmTimeStruct->secondsOfTheDay;
     }
-    if (update) {
+    if (update || forceUpdate) {
         LCDUpdate();
     }
 }

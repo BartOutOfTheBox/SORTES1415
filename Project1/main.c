@@ -35,7 +35,7 @@ void updateTime();
 void displayString(BYTE pos, char* text);
 void startTimeEdit(void);
 void startAlarmEdit(void);
-void updateClock(void);
+void updateBoard(void);
 void updateLeds(void);
 void startDisplay(void);
 void checkButtons(void);
@@ -63,7 +63,8 @@ void main(void)
     init();
     while(1) {
         checkButtons();
-        updateClock();
+        checkAlarm();
+        updateBoard();
     }
 }
 
@@ -229,9 +230,7 @@ void startDisplay(void) {
     stateChange = True;
 }
 
-void updateClock(void) {
-    checkAlarm();
-
+void updateBoard(void) {
     if (stateChange) {
         stateChange = False;
         LCDErase();
@@ -247,6 +246,7 @@ void updateClock(void) {
             displayString(16, "Enter the time");
             displayString(0, "Time:");
         }
+        LCDUpdate();
     }
     updateTime();
     updateLeds();

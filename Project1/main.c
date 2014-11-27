@@ -9,41 +9,28 @@
 #define __18F97J60
 #define __SDCC__
 
-#include "Include/HardwareProfile.h"
-
-#include <string.h>
 #include <stdlib.h>
 #include <stdio.h>
+#include <limits.h>
+#include <malloc.h>
+
 #include <pic18fregs.h>  //defines the address corresponding to the symbolic
                          //names of the sfr
-#include <limits.h>
 
+#include "Include/HardwareProfile.h"
 #include "Include/LCDBlocking.h"
-#include "Include/TCPIP_Stack/Delay.h"
+
 #include "main.h"
+#include "time.h"
 #include "Clock.h"
 #include "Alarm.h"
-#include <malloc.h>
-#include "time.h"
-
-void init(void);
-void initTimer(void);
-void initButtons(void);
-void initLeds(void);
-void startTimer(void);
-void updateTimeDisplay();
-void displayString(BYTE pos, char* text);
-void startTimeEdit(void);
-void startAlarmEdit(void);
-void updateBoard(void);
-void updateLeds(void);
-void startDisplay(void);
-void checkButtons(void);
 
 unsigned char _MALLOC_SPEC heap[256];
 
 long int interrupts;
 volatile bool stateChange;
+bool button1Pressed;
+bool button2Pressed;
 
 typedef enum { EditHours, EditMin, EditSec, NoEdit } editState;
 editState currentEditState;
@@ -51,12 +38,21 @@ editState currentEditState;
 typedef enum { SetTime, SetAlarm, Display } state;
 state currentState;
 
-bool button1Pressed;
-bool button2Pressed;
-char previousText[8];
-
 int lastClockSecondsPrint;
 int lastAlarmSecondsPrint;
+
+void init(void);
+void initTimer(void);
+void initLeds(void);
+void initButtons(void);
+void startDisplay(void);
+void startTimeEdit(void);
+void startAlarmEdit(void);
+void checkButtons(void);
+void updateTimeDisplay();
+void updateBoard(void);
+void updateLeds(void);
+void displayString(BYTE pos, char* text);
 
 void main(void)
 {
@@ -65,63 +61,6 @@ void main(void)
         checkButtons();
         checkAlarm();
         updateBoard();
-    }
-}
-
-void checkButtons() {
-    if (button2Pressed) {
-        button2Pressed = False;
-        if (isAlarmSounding()) {
-            enableAlarm();
-        }
-        else if (currentState == SetTime) {
-            if (currentEditState == EditHours) {
-                addSecondsToClock(3600);
-            } else if (currentEditState == EditMin) {
-                addSecondsToClock(60);
-            } else if (currentEditState == EditSec) {
-                addSecondsToClock(1);
-            }
-        } else if (currentState == SetAlarm) {
-            if (currentEditState == EditHours) {
-                addSecondsToAlarm(3600);
-            } else if (currentEditState == EditMin) {
-                addSecondsToAlarm(60);
-            } else if (currentEditState == EditSec) {
-                addSecondsToAlarm(1);
-            }
-        } else {
-            startTimeEdit();
-        }
-    }
-    else if (button1Pressed) {
-        button1Pressed = False;
-        if (isAlarmSounding()) {
-            enableAlarm();
-        }
-        else if (currentState == SetTime || currentState == SetAlarm) {
-            if (currentEditState == EditHours) {
-                currentEditState = EditMin;
-            } else if (currentEditState == EditMin) {
-                currentEditState = EditSec;
-            } else if (currentEditState == EditSec) {
-                if (currentState == SetTime) {
-                    if (!isAlarmSet()) {
-                        enableClock();
-                        startAlarmEdit();
-                    }
-                    else {
-                        startDisplay();
-                    }
-                }
-                else {
-                    startDisplay();
-                }
-            }
-        }
-        else {
-            startAlarmEdit();
-        }
     }
 }
 
@@ -183,30 +122,18 @@ void initTimer(void)
     T0CONbits.PSA=1; // disable timer0 prescaler
     INTCONbits.T0IE=1; // enable timer0 interrupts
 
-    startTimer();
+    INTCONbits.T0IF  = 0;
+    T0CONbits.TMR0ON = 1;
 }
+
 
 
 /*************************************************
- Function displayString:
- Writes the first characters of the string in the remaining
- space of the 32 positions LCD, starting at pos
- (does not use strlcopy, so can use up to the 32th place)
-*************************************************/
+ * State machine
+ ************************************************/
 
-void displayString(BYTE pos, char* text)
+void startTimeEdit(void)
 {
-   BYTE        l = strlen(text);/*number of actual chars in the string*/
-   BYTE      max = 32-pos;    /*available space on the lcd*/
-   char       *d = (char*)&LCDText[pos];
-   const char *s = text;
-   size_t      n = (l<max)?l:max;
-   /* Copy as many bytes as will fit */
-    if (n != 0)
-      while (n-- != 0)*d++ = *s++;
-}
-
-void startTimeEdit(void) {
     currentState = SetTime;
     currentEditState = EditHours;
     disableClock();
@@ -214,14 +141,16 @@ void startTimeEdit(void) {
     stateChange = True;
 }
 
-void startAlarmEdit(void) {
+void startAlarmEdit(void)
+{
     currentState = SetAlarm;
     currentEditState = EditHours;
     disableAlarm();
     stateChange = True;
 }
 
-void startDisplay(void) {
+void startDisplay(void)
+{
     currentState = Display;
     currentEditState = NoEdit;
     enableClock();
@@ -229,7 +158,70 @@ void startDisplay(void) {
     stateChange = True;
 }
 
-void updateBoard(void) {
+void checkButtons()
+{
+    if (button2Pressed) {
+        button2Pressed = False;
+        if (isAlarmSounding()) {
+            enableAlarm();
+        }
+        else if (currentState == SetTime) {
+            if (currentEditState == EditHours) {
+                addSecondsToClock(3600);
+            } else if (currentEditState == EditMin) {
+                addSecondsToClock(60);
+            } else if (currentEditState == EditSec) {
+                addSecondsToClock(1);
+            }
+        } else if (currentState == SetAlarm) {
+            if (currentEditState == EditHours) {
+                addSecondsToAlarm(3600);
+            } else if (currentEditState == EditMin) {
+                addSecondsToAlarm(60);
+            } else if (currentEditState == EditSec) {
+                addSecondsToAlarm(1);
+            }
+        } else {
+            startTimeEdit();
+        }
+    }
+    else if (button1Pressed) {
+        button1Pressed = False;
+        if (isAlarmSounding()) {
+            enableAlarm();
+        }
+        else if (currentState == SetTime || currentState == SetAlarm) {
+            if (currentEditState == EditHours) {
+                currentEditState = EditMin;
+            } else if (currentEditState == EditMin) {
+                currentEditState = EditSec;
+            } else if (currentEditState == EditSec) {
+                if (currentState == SetTime) {
+                    if (!isAlarmSet()) {
+                        enableClock();
+                        startAlarmEdit();
+                    }
+                    else {
+                        startDisplay();
+                    }
+                }
+                else {
+                    startDisplay();
+                }
+            }
+        }
+        else {
+            startAlarmEdit();
+        }
+    }
+}
+
+/*************************************************
+* Display & Led
+************************************************/
+
+void updateBoard(void)
+{
     if (stateChange) {
         stateChange = False;
         LCDErase();
@@ -251,7 +243,27 @@ void updateBoard(void) {
     updateLeds();
 }
 
-void blinkTimeEdit(char* timeString) {
+/*************************************************
+ Function displayString:
+ Writes the first characters of the string in the remaining
+ space of the 32 positions LCD, starting at pos
+ (does not use strlcopy, so can use up to the 32th place)
+*************************************************/
+
+void displayString(BYTE pos, char* text)
+{
+   BYTE        l = strlen(text);/*number of actual chars in the string*/
+   BYTE      max = 32-pos;    /*available space on the lcd*/
+   char       *d = (char*)&LCDText[pos];
+   const char *s = text;
+   size_t      n = (l<max)?l:max;
+   /* Copy as many bytes as will fit */
+    if (n != 0)
+      while (n-- != 0)*d++ = *s++;
+}
+
+void blinkTimeEdit(char* timeString)
+{
     if (currentEditState == EditHours && ((interrupts / (ticksPerSecond / 2)) % 2) != 0) {
         timeString[0] = ' ';
         timeString[1] = ' ';
@@ -271,8 +283,8 @@ void updateTimeDisplay(void)
     bool update = False;
     time_t *clockTimeStruct = updateAndGetClockTime();
     time_t *alarmTimeStruct = updateAndGetAlarmTime();
-    char clockTimeString[8];
-    char alarmTimeString[8];
+    char clockTimeString[9];
+    char alarmTimeString[9];
 
     sprintf(clockTimeString, "%02d:%02d:%02d", clockTimeStruct->hours, clockTimeStruct->minutes, clockTimeStruct->seconds);
     sprintf(alarmTimeString, "%02d:%02d:%02d", alarmTimeStruct->hours, alarmTimeStruct->minutes, alarmTimeStruct->seconds);
@@ -304,7 +316,8 @@ void updateTimeDisplay(void)
     }
 }
 
-void updateLeds(void) {
+void updateLeds(void)
+{
     if (showClockLed()) {
         LATJbits.LATJ0=1; // switch LED 1 on
     }
@@ -319,12 +332,6 @@ void updateLeds(void) {
     }
 }
 
-void startTimer(void)
-{
-    INTCONbits.T0IF=0;
-    T0CONbits.TMR0ON=1;
-}
-
 void LowISR(void) __interrupt 2
 {
     //put the code here
@@ -333,8 +340,8 @@ void LowISR(void) __interrupt 2
 void HighISR(void) __interrupt 1
 {
     if (INTCONbits.T0IF) { // Timer0 Interrupt
-        INTCONbits.T0IF = 0;
-        T0CONbits.TMR0ON=1;
+        INTCONbits.T0IF  = 0;
+        T0CONbits.TMR0ON = 1;
         if (LONG_MAX - 1 < interrupts) {
             interrupts = 0;
         }
@@ -353,5 +360,4 @@ void HighISR(void) __interrupt 1
         if(BUTTON1_IO);  //just read the bit
         button1Pressed = True;
     }
-    //updateClock();
 }

@@ -1,5 +1,5 @@
 /*
- * Clock.h
+ * clock.h
  *
  *  Created on: 25-nov.-2014
  *      Author: Arne

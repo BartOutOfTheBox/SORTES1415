@@ -1,5 +1,5 @@
 /*
- * Alarm.h
+ * alarm.h
  *
  *  Created on: 26-nov.-2014
  *      Author: Arne

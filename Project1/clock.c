@@ -1,5 +1,5 @@
 /*
- * Clock.c
+ * clock.c
  *
  *  Created on: 25-nov.-2014
  *      Author: Arne
@@ -54,8 +54,8 @@ void tickClock(void)
         clockTicks++;
         if (clockTicks >= ticksPerSecond) {
             clockSeconds++;
-            if (clockSeconds >= 86400) {
-                clockSeconds = clockSeconds % 86400;
+            if (clockSeconds >= SECONDS_PER_DAY) {
+                clockSeconds = clockSeconds % SECONDS_PER_DAY;
             }
             clockTicks = clockTicks % ticksPerSecond;
         }
@@ -64,7 +64,7 @@ void tickClock(void)
 
 void addSecondsToClock(long int newSeconds)
 {
-    clockSeconds = (clockSeconds + newSeconds) % 86400;
+    clockSeconds = (clockSeconds + newSeconds) % SECONDS_PER_DAY;
 }
 
 

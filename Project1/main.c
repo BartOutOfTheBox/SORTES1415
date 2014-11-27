@@ -19,8 +19,8 @@
 
 #include "main.h"
 #include "time.h"
-#include "Clock.h"
-#include "Alarm.h"
+#include "clock.h"
+#include "alarm.h"
 
 unsigned char _MALLOC_SPEC heap[256];
 

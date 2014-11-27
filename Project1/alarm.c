@@ -1,14 +1,14 @@
 /*
- * Alarm.c
+ * alarm.c
  *
  *  Created on: 26-nov.-2014
  *      Author: Arne
  */
 #include <malloc.h>
-#include "Alarm.h"
+#include "alarm.h"
 #include "time.h"
 #include "main.h"
-#include "Clock.h"
+#include "clock.h"
 
 typedef enum { AlarmDisabled, AlarmSounding, AlarmEnabled, AlarmUnset } alarmState_t;
 static alarmState_t currentState;
@@ -54,7 +54,7 @@ void updateAlarm(void)
     if (currentState == AlarmEnabled) {
         if (alarmTime == getClockSeconds()) {
             currentState = AlarmSounding;
-            alarmEnd = (getClockSeconds() + 30) % 86400;
+            alarmEnd = (getClockSeconds() + 30) % SECONDS_PER_DAY;
         }
     }
     else if (currentState == AlarmSounding && getClockSeconds() == alarmEnd) {
@@ -64,7 +64,7 @@ void updateAlarm(void)
 
 void addSecondsToAlarm(long int newSeconds)
 {
-    alarmTime = (alarmTime + newSeconds) % 86400;
+    alarmTime = (alarmTime + newSeconds) % SECONDS_PER_DAY;
 }
 
 time_t *updateAndGetAlarmTime(void)

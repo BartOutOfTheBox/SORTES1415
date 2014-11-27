@@ -31,7 +31,7 @@ void initTimer(void);
 void initButtons(void);
 void initLeds(void);
 void startTimer(void);
-void updateTime();
+void updateTimeDisplay();
 void displayString(BYTE pos, char* text);
 void startTimeEdit(void);
 void startAlarmEdit(void);
@@ -204,7 +204,6 @@ void displayString(BYTE pos, char* text)
    /* Copy as many bytes as will fit */
     if (n != 0)
       while (n-- != 0)*d++ = *s++;
-    //LCDUpdate();
 }
 
 void startTimeEdit(void) {
@@ -248,7 +247,7 @@ void updateBoard(void) {
         }
         LCDUpdate();
     }
-    updateTime();
+    updateTimeDisplay();
     updateLeds();
 }
 
@@ -267,7 +266,7 @@ void blinkTimeEdit(char* timeString) {
     }
 }
 
-void updateTime(void)
+void updateTimeDisplay(void)
 {
     bool update = False;
     time_t *clockTimeStruct = updateAndGetClockTime();
@@ -307,16 +306,16 @@ void updateTime(void)
 
 void updateLeds(void) {
     if (showClockLed()) {
-        LATJbits.LATJ0=1; // switch LED on
+        LATJbits.LATJ0=1; // switch LED 1 on
     }
     else {
-        LATJbits.LATJ0=0; // switch LED on
+        LATJbits.LATJ0=0; // switch LED 1 off
     }
     if (showAlarmLed()) {
-        LATJbits.LATJ1=1; // switch LED off
+        LATJbits.LATJ1=1; // switch LED 2 on
     }
     else {
-        LATJbits.LATJ1=0; // switch LED off
+        LATJbits.LATJ1=0; // switch LED 2 off
     }
 }
 
@@ -324,10 +323,6 @@ void startTimer(void)
 {
     INTCONbits.T0IF=0;
     T0CONbits.TMR0ON=1;
-}
-
-long int getInterrupts(void) {
-    return interrupts;
 }
 
 void LowISR(void) __interrupt 2
@@ -339,7 +334,7 @@ void HighISR(void) __interrupt 1
 {
     if (INTCONbits.T0IF) { // Timer0 Interrupt
         INTCONbits.T0IF = 0;
-        startTimer();
+        T0CONbits.TMR0ON=1;
         if (LONG_MAX - 1 < interrupts) {
             interrupts = 0;
         }
@@ -354,7 +349,7 @@ void HighISR(void) __interrupt 1
     }
     else if(INTCON3bits.INT3IF)
     {
-        INTCON3bits.INT3IF  = 0;   //clear INT1 flag
+        INTCON3bits.INT3IF  = 0;   //clear INT3 flag
         if(BUTTON1_IO);  //just read the bit
         button1Pressed = True;
     }

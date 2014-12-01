@@ -11,6 +11,8 @@
 #define TIME_H_
 
 #define SECONDS_PER_DAY 86400
+//the amount of seconds minues one to count before skipping a tick.
+#define SKIP_TICK_AFTER_SECONDS 4
 
 extern long int ticksPerSecond;
 

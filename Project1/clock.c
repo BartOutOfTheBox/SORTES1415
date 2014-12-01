@@ -74,8 +74,8 @@ void tickClock(void)
 {
 	//Only increase the clock, when it's enabled.
     if (currentState == ClockRunning) {
-		if (skipTick == 4) {
-			// R aeset the amount of seconds after a tickSkip.
+		if (skipTick == SKIP_TICK_AFTER_SECONDS) {
+			// Reset the amount of seconds after a tickSkip.
 		    skipTick = 0;
 		} else {
 			clockTicks++;

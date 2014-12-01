@@ -211,7 +211,7 @@ void checkButtons()
             } else if (currentEditState == EditMin) {
 				// Add a minute to the alarmtime.
                 addSecondsToAlarm(60);
-            } else if (currentEditState == EditSec) 
+            } else if (currentEditState == EditSec) {
 				// Add a second to the alarmtime.
                 addSecondsToAlarm(1);
             }

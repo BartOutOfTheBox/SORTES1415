@@ -10,7 +10,7 @@
 
 #include "time.h"
 
-long int ticksPerSecond = 24318;
+long int ticksPerSecond = 24412;
 
 // Convert and store time in seconds to time in hours, minutes, and seconds.
 void updateTimeStruct(long int secondsToday, time_t *timeStruct) {

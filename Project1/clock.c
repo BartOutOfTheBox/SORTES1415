@@ -34,6 +34,9 @@ static volatile long int clockSeconds;
 static clockState_t currentState;
 // A time struct representing the time of the clock.
 static time_t *clockTimeStruct;
+// Skipping a tick every x seconds. 
+// This variable indicates the amount of seconds after the reset.
+static int skipTick;
 
 void initClock(void)
 {
@@ -49,6 +52,7 @@ void initClock(void)
     currentState                        = ClockDisabled;
     clockTicks                          = 0;
     clockSeconds                        = 0;
+	skipTick							= 0;
 }
 
 void enableClock(void)
@@ -70,9 +74,16 @@ void tickClock(void)
 {
 	//Only increase the clock, when it's enabled.
     if (currentState == ClockRunning) {
-        clockTicks++;
+		if (skipTick == 4) {
+			// R aeset the amount of seconds after a tickSkip.
+		    skipTick = 0;
+		} else {
+			clockTicks++;
+		}
 		// If a second has passed
         if (clockTicks >= ticksPerSecond) {
+			// increase the amount of seconds after a tickSkipt.
+			skipTick++;
             clockSeconds++;
 			// If a day has passed
             if (clockSeconds >= SECONDS_PER_DAY) {

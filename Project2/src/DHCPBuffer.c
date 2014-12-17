@@ -13,27 +13,31 @@ void addToDHCPBuffer(dhcpBuffer_t* buffer, BOOTP_HEADER* header, BYTE* packetDat
 {
     dhcpBufferItem_t* newItem;
 
+    // Check if we got a valid buffer. If not, free the data.
     if (!buffer)
     {
-        DisplayString(0, "no buffer");
+        //DisplayString(0, "no buffer"); // For debugging purposes
         free((unsigned char _MALLOC_SPEC*) header);
         free((unsigned char _MALLOC_SPEC*) packetData);
         return;
     }
 
+    // Try to allocate a new buffer item
     newItem = (dhcpBufferItem_t*) malloc(sizeof(dhcpBufferItem_t));
     if (!newItem)
     {
-        DisplayString(0, "no mem for newItem");
+        //DisplayString(0, "no mem for newItem"); // For debugging purposes
         free((unsigned char _MALLOC_SPEC*) header);
         free((unsigned char _MALLOC_SPEC*) packetData);
         return;
     }
 
+    // Set the proper pointers
     newItem->BOOTPHeader = header;
     newItem->packetData = packetData;
     newItem->dataLength = dataLength;
 
+    // If we have no tail, our buffer is still empty
     if (!buffer->tail)
     {
         buffer->head = newItem;

@@ -21,43 +21,52 @@ void receiveDHCPFromClientTask(void)
         listen(DHCPClientSocket, DHCPClientBuffer);
 }
 
+/**
+ * Listen on a socket and store any received dhcp packets in the given buffer
+ *
+ * @param socket The socket to read from
+ * @param buffer The buffer to store the DHCP packet in
+ */
 void listen(UDP_SOCKET socket, dhcpBuffer_t* buffer) {
-    WORD availableData;
-    BYTE* packetData;
+    WORD availableData; // data in packet
+    BYTE* packetData; // packetData
     WORD dataCount = 0;
-    BOOTP_HEADER* BOOTPHeader;
-    WORD oldBuffer = (WORD) buffer;
-    char debugString[32];
+    BOOTP_HEADER* BOOTPHeader; // packetHeader
+    char debugString[32]; // for debugging purposes
 
     // Check to see if a valid DHCP packet has arrived
     if(UDPIsGetReady(socket) < 241u)
         return;
 
+    // Read the header
     BOOTPHeader = (BOOTP_HEADER *) malloc(sizeof(BOOTP_HEADER));
     if (!BOOTPHeader)
         return;
 
-    if (!buffer) {
-
-               DisplayString(0, "wrong place");
-                        return;
-                }
-
+    ///////////////////////////
+    // DEBUG #1
+    //
+    // Prints address of buffer
+    ///////////////////////////
     sprintf(debugString, "%d",
                        buffer);
-                        DisplayString(0, debugString);
+    DisplayString(0, debugString);
 
     // Retrieve the BOOTP header
     UDPGetArray((BYTE*)BOOTPHeader, sizeof(BOOTP_HEADER));
 
-    if (!buffer) {
-
-           sprintf(debugString, "%d",
+    ///////////////////////////
+    // DEBUG #2
+    //
+    // Prints address of buffer on first packet
+    // Prints 0 of second buffer
+    ///////////////////////////
+    sprintf(debugString, "%d",
                    buffer);
-                    DisplayString(16, debugString);
-                    return;
-            }
+    DisplayString(16, debugString);
 
+
+    // Check how much data is left
     availableData = UDPIsGetReady(socket);
     packetData = (BYTE *) malloc(availableData);
     if (!packetData)
@@ -68,11 +77,14 @@ void listen(UDP_SOCKET socket, dhcpBuffer_t* buffer) {
         return;
     }
 
+    // Get the remaining data of the packet
     while( dataCount < availableData && UDPGet(packetData + dataCount) ) {
         dataCount++;
     }
 
+    // Add it to the buffer
     addToDHCPBuffer(buffer, BOOTPHeader, packetData, availableData);
 
+    // Discard the rest of the packet
     UDPDiscard();
 }

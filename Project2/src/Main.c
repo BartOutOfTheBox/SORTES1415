@@ -263,15 +263,19 @@ void InitializeDHCPRelay(void)
     // Initialize the heap in the declared heap character array.
     _initHeap(heap, 1024);
 
+    // Allocate the buffers
     DHCPClientBuffer = (dhcpBuffer_t *) malloc(sizeof(dhcpBuffer_t));
     DHCPServerBuffer = (dhcpBuffer_t *) malloc(sizeof(dhcpBuffer_t));
 
+    // Open the socket to listen to client broadcasts
     DHCPClientSocket = UDPOpen(DHCP_SERVER_PORT, NULL, DHCP_CLIENT_PORT);
     if(DHCPClientSocket == INVALID_UDP_SOCKET) {
         printError("Invalid DHCP Client Socket");
         return;
     }
 
+    // Open the socket to listen to server messages
+    // TODO: set NODE_INFO for server
     DHCPServerSocket = UDPOpen(DHCP_SERVER_PORT, NULL, DHCP_SERVER_PORT);
     if(DHCPServerSocket == INVALID_UDP_SOCKET) {
         printError("Invalid DHCP Server Socket");
@@ -280,7 +284,7 @@ void InitializeDHCPRelay(void)
 }
 
 void printError(char* error) {
-    DisplayString (0,error);
+    DisplayString (0, error);
 }
 
 /*************************************************

@@ -50,7 +50,7 @@ void listen(UDP_SOCKET socket, dhcpBuffer_t* buffer) {
     ///////////////////////////
     sprintf(debugString, "%d",
                        buffer);
-    DisplayString(0, debugString);
+    //DisplayString(0, debugString);
 
     // Retrieve the BOOTP header
     UDPGetArray((BYTE*)BOOTPHeader, sizeof(BOOTP_HEADER));
@@ -63,7 +63,7 @@ void listen(UDP_SOCKET socket, dhcpBuffer_t* buffer) {
     ///////////////////////////
     sprintf(debugString, "%d",
                    buffer);
-    DisplayString(16, debugString);
+    //DisplayString(16, debugString);
 
 
     // Check how much data is left

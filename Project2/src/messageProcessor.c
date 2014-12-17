@@ -10,13 +10,15 @@
 #include "main.h"
 
 typedef enum { Polling, Processing } processorState_t;
-static processorState_t clientProcessorState;
-static processorState_t serverProcessorState;
+static processorState_t clientProcessorState = Polling;
+static processorState_t serverProcessorState = Polling;
 
 static dhcpBufferItem_t* clientMessage;
 static dhcpBufferItem_t* serverMessage;
 
-void processAndForwardClientMessage(void);
+BOOL processAndForwardClientMessage(void);
+BOOL processAndForwardServerMessage(void);
+BOOL sendMessage(UDP_SOCKET socket, dhcpBufferItem_t* message);
 
 void processClientMessage(void)
 {
@@ -31,7 +33,9 @@ void processClientMessage(void)
             break;
         case Processing:
             DisplayString(0, "processing broadcast");
-            clientProcessorState = Polling;
+            if (processAndForwardClientMessage()) {
+                clientProcessorState = Polling;
+            }
             break;
     }
 }
@@ -48,14 +52,45 @@ void processServerMessage(void)
             break;
         case Processing:
             DisplayString(0, "processing server message");
-            serverProcessorState = Polling;
+            if (processAndForwardServerMessage()) {
+                serverProcessorState = Polling;
+            }
             break;
     }
 }
 
-void processAndForwardClientMessage(void)
+BOOL processAndForwardClientMessage(void)
 {
-    freeDHCPBufferItem(clientMessage);
-    DisplayString(0, "goodbye message!");
-    clientMessage = 0;
+    if (!clientMessage)
+        return TRUE;
+    clientMessage->BOOTPHeader->RelayAgentIP.Val = AppConfig.MyIPAddr.Val;
+    if (sendMessage(DHCPServerSocket, clientMessage)) {
+        DisplayString(0, "goodbye message!");
+        freeDHCPBufferItem(clientMessage);
+        clientMessage = 0;
+        return TRUE;
+    }
+    return FALSE;
+}
+
+BOOL processAndForwardServerMessage(void)
+{
+    return FALSE;
+}
+
+BOOL sendMessage(UDP_SOCKET socket, dhcpBufferItem_t* message) {
+    WORD size = sizeof(BOOTP_HEADER) + message->dataLength;
+    DisplayString(0, "sending message");
+    if(UDPIsPutReady(socket) < size) {
+        DisplayString(0, "not enough putroom");
+        return FALSE;
+    }
+
+    UDPPutArray((BYTE*)message->BOOTPHeader, sizeof(BOOTP_HEADER));
+    UDPPutArray((BYTE*)message->packetData, message->dataLength);
+
+    // Transmit the packet
+    UDPFlush();
+    DisplayString(0, "flushing");
+    return TRUE;
 }

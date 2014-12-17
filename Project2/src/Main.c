@@ -253,7 +253,7 @@ static DWORD dwLastIP = 0;
         receiveDHCPFromClientTask();
         if (!DHCPClientBuffer)
             DisplayString(0, "where is the buffer?");
-        //processClientMessage();
+        processClientMessage();
         
     }//end of while(1)
 }//end of main()

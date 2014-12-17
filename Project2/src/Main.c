@@ -102,9 +102,10 @@
 #define THIS_IS_STACK_APPLICATION
 
 // Include functions specific to this stack application
-#include "Include/Main.h"
 #include "Include/TCPIP_Stack/Delay.h"
-#include "Include/receiver.h"
+#include "Main.h"
+#include "receiver.h"
+#include "messageProcessor.h"
 
 // Declare AppConfig structure and some other supporting stack variables
 APP_CONFIG AppConfig;
@@ -116,8 +117,8 @@ UDP_SOCKET DHCPServerSocket;
 UDP_SOCKET DHCPClientSocket;
 NODE_INFO DHCP_Server;
 
-dhcpBuffer_t DHCPClientBuffer;
-dhcpBuffer_t DHCPServerBuffer;
+dhcpBuffer_t* DHCPClientBuffer;
+dhcpBuffer_t* DHCPServerBuffer;
 
 
 // Private helper functions.
@@ -248,7 +249,11 @@ static DWORD dwLastIP = 0;
         // for incoming packet, type of packet and calling
         // appropriate stack entity to process it.
         StackTask();
+
         receiveDHCPFromClientTask();
+        if (!DHCPClientBuffer)
+            DisplayString(0, "where is the buffer?");
+        //processClientMessage();
         
     }//end of while(1)
 }//end of main()
@@ -256,7 +261,10 @@ static DWORD dwLastIP = 0;
 void InitializeDHCPRelay(void)
 {
     // Initialize the heap in the declared heap character array.
-    _initHeap(heap, 256);
+    _initHeap(heap, 1024);
+
+    DHCPClientBuffer = (dhcpBuffer_t *) malloc(sizeof(dhcpBuffer_t));
+    DHCPServerBuffer = (dhcpBuffer_t *) malloc(sizeof(dhcpBuffer_t));
 
     DHCPClientSocket = UDPOpen(DHCP_SERVER_PORT, NULL, DHCP_CLIENT_PORT);
     if(DHCPClientSocket == INVALID_UDP_SOCKET) {

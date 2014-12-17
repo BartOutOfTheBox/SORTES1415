@@ -58,9 +58,10 @@
 // define the compiler we use
 #define __SDCC__
 
-#include "HardwareProfile.h"
-#include "GenericTypeDefs.h"
+#include "Include/HardwareProfile.h"
+#include "Include/GenericTypeDefs.h"
 #include "DHCPBuffer.h"
+#include "Include/TCPIP_Stack/TCPIP.h"
 #include <malloc.h>
 
 #define BAUD_RATE       (19200)		// bps
@@ -80,7 +81,6 @@
 #endif
 
 // Include all headers for any enabled TCPIP Stack functions
-#include "TCPIP_Stack/TCPIP.h"
 
 void initializeDHCPRelay(void);
 
@@ -90,8 +90,8 @@ extern UDP_SOCKET DHCPServerSocket;
 extern UDP_SOCKET DHCPClientSocket;
 extern NODE_INFO DHCP_Server;
 
-extern dhcpBuffer_t DHCPClientBuffer;
-extern dhcpBuffer_t DHCPServerBuffer;
+extern dhcpBuffer_t* DHCPClientBuffer;
+extern dhcpBuffer_t* DHCPServerBuffer;
 
 
 #endif // _MAIN_H

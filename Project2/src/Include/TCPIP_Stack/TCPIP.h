@@ -58,7 +58,7 @@
 #include "../GenericTypeDefs.h"
 #include "../Compiler.h"
 #include "../HardwareProfile.h"
-#include "../Debug.h" //ML, for the debugging functions
+#include "../../Debug.h" //ML, for the debugging functions
 
 // RESERVED FEATURE -- do not change from current value of 1u as this is not 
 // fully implemented yet.

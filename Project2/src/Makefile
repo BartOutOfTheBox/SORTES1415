@@ -11,8 +11,10 @@ LDFLAGS= -mpic16 -p18f97j60 -L/usr/local/lib/pic16 -llibio18f97j60.lib -llibdev1
 AR = ar
 RM = rm
 
-OBJECTS=Objects/Main.o Objects/receiver.o Objects/DHCPBuffer.o \
-   Objects/Announce.o Objects/ARP.o Objects/Delay.o \
+APP_OBJECTS=Objects/Main.o Objects/receiver.o Objects/DHCPBuffer.o \
+   Objects/messageProcessor.o
+
+OBJECTS=Objects/Announce.o Objects/ARP.o Objects/Delay.o \
    Objects/DHCP.o Objects/DHCPs.o Objects/DNS.o  Objects/ETH97J60.o  \
    Objects/Hashes.o Objects/Helpers.o Objects/ICMP.o Objects/IP.o \
    Objects/LCDBlocking.o Objects/StackTsk.o Objects/UDPPerformanceTest.o \
@@ -74,17 +76,21 @@ TCPIP_HEADERS=Include/TCPIP_Stack/Helpers.h \
    Include/TCPIP_Stack/HTTP.h \
    Include/TCPIP_Stack/HTTP2.h \
    Include/TCPIP_Stack/SMTP.h \
-   Include/TCPIP_Stack/TFTPc.h
+   Include/TCPIP_Stack/TFTPc.h \
+   Debug.h
 
 APP_HEADERS=Include/GenericTypeDefs.h \
    Include/Compiler.h \
    Include/HardwareProfile.h \
    Include/TCPIPConfig.h \
    Include/mib.h \
-   Include/Main.h
+   Main.h \
+   DHCPBuffer.h \
+   messageProcessor.h \
+   receiver.h
 
-DHCPRelay : $(OBJECTS) 
-	$(LD) $(LDFLAGS) $(OBJECTS)
+DHCPRelay : $(APP_OBJECTS) $(OBJECTS) 
+	$(LD) $(LDFLAGS) $(APP_OBJECTS) $(OBJECTS)
 
 Objects/Main.o : Main.c $(SDCC_HEADERS) $(SDCC_PIC16_HEADERS) \
    $(APP_HEADERS) $(TCPIP_HEADERS)
@@ -97,6 +103,10 @@ Objects/receiver.o : receiver.c $(SDCC_HEADERS) $(SDCC_PIC16_HEADERS) \
 Objects/DHCPBuffer.o : DHCPBuffer.c $(SDCC_HEADERS) $(SDCC_PIC16_HEADERS) \
    $(APP_HEADERS) $(TCPIP_HEADERS)
 	$(CC) $(CFLAGS) DHCPBuffer.c
+	
+Objects/messageProcessor.o : messageProcessor.c $(SDCC_HEADERS) $(SDCC_PIC16_HEADERS) \
+   $(APP_HEADERS) $(TCPIP_HEADERS)
+	$(CC) $(CFLAGS) messageProcessor.c
 
 Objects/CustomHTTPApp.o : TCPIP_Stack/CustomHTTPApp.c $(SDCC_HEADERS) \
    $(SDCC_PIC16_HEADERS) $(APP_HEADERS) $(TCPIP_HEADERS)
@@ -348,5 +358,5 @@ Objects/CustomSSLCert.o : CustomSSLCert.c $(SDCC_HEADERS)  \
 	$(CC) -c -mpic16 -p18f97j60  -o"Objects/CustomSSLCert.o" -L/usr/local/lib/pic16  TCPIP_Stack/CustomSSLCert.c
 
 clean : 
-	$(RM) $(OBJECTS)
+	$(RM) $(APP_OBJECTS) $(OBJECTS)
 

@@ -12,8 +12,8 @@ typedef struct dhcpBufferItem dhcpBufferItem_t;
 typedef struct dhcpBuffer dhcpBuffer_t;
 
 #include "Main.h"
-#include "HardwareProfile.h"
-#include "TCPIP_Stack/TCPIP.h"
+#include "Include/HardwareProfile.h"
+#include "Include/TCPIP_Stack/TCPIP.h"
 
 struct dhcpBufferItem {
     BOOTP_HEADER* BOOTPHeader;
@@ -30,5 +30,6 @@ struct dhcpBuffer {
 void addToDHCPBuffer(dhcpBuffer_t* buffer, BOOTP_HEADER* header, BYTE* data, WORD dataLength);
 
 dhcpBufferItem_t* getFromDHCPBuffer(dhcpBuffer_t* buffer);
+void freeDHCPBufferItem(dhcpBufferItem_t* item);
 
 #endif /* DHCPBUFFER_H_ */

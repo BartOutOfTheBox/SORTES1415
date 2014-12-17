@@ -8,7 +8,7 @@
 #ifndef DEBUG_H_
 #define DEBUG_H_
 
-#include "GenericTypeDefs.h"
+#include "Include/GenericTypeDefs.h"
 
 #if !defined(THIS_IS_STACK_APPLICATION)
     extern BYTE AN0String[8];

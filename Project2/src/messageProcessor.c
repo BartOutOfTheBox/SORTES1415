@@ -9,88 +9,52 @@
 #include "DHCPBuffer.h"
 #include "main.h"
 
-typedef enum { Polling, Processing } processorState_t;
-static processorState_t clientProcessorState = Polling;
-static processorState_t serverProcessorState = Polling;
-
-static dhcpBufferItem_t* clientMessage;
-static dhcpBufferItem_t* serverMessage;
-
-BOOL processAndForwardClientMessage(void);
-BOOL processAndForwardServerMessage(void);
-BOOL sendMessage(UDP_SOCKET socket, dhcpBufferItem_t* message);
+BOOL sendMessage(UDP_SOCKET socket, dhcpBuffer_t* message);
 
 void processClientMessage(void)
 {
-    switch (clientProcessorState)
+    if (!DHCPClientBuffer.free)
     {
-        case Polling:
-            clientMessage = getFromDHCPBuffer(DHCPClientBuffer);
-            if (clientMessage != 0) {
-                DisplayString(0, "got client message");
-                clientProcessorState = Processing;
-            }
-            break;
-        case Processing:
-            //DisplayString(0, "processing broadcast");
-            if (processAndForwardClientMessage()) {
-                clientProcessorState = Polling;
-            }
-            break;
+        // Broadcast available. Process it and attempt to relay it.
+        // Set Relay IP to own IP
+        DHCPClientBuffer.BOOTPHeader->RelayAgentIP.Val = AppConfig.MyIPAddr.Val;
+        // Forward message to server
+        if (sendMessage(DHCPServerSocket, &DHCPClientBuffer)) {
+            // Free buffer
+            freeDHCPBuffer(&DHCPClientBuffer);
+        }
     }
 }
 
 void processServerMessage(void)
 {
-    switch (serverProcessorState)
+    if (!DHCPServerBuffer.free)
     {
-        case Polling:
-            serverMessage = getFromDHCPBuffer(DHCPServerBuffer);
-            if (serverMessage) {
-                serverProcessorState = Processing;
-            }
-            break;
-        case Processing:
-            DisplayString(0, "processing server message");
-            if (processAndForwardServerMessage()) {
-                serverProcessorState = Polling;
-            }
-            break;
+        // Reply available. Attempt to relay it.
+        DisplayString(0, "got server msg!");
+        // Broadcast message
+        if (sendMessage(DHCPClientSocket, &DHCPServerBuffer)) {
+            // Free buffer
+            freeDHCPBuffer(&DHCPServerBuffer);
+        }
     }
 }
 
-BOOL processAndForwardClientMessage(void)
-{
-    if (!clientMessage)
-        return TRUE;
-    clientMessage->BOOTPHeader->RelayAgentIP.Val = AppConfig.MyIPAddr.Val;
-    if (sendMessage(DHCPServerSocket, clientMessage)) {
-        DisplayString(0, "goodbye message!");
-        freeDHCPBufferItem(clientMessage);
-        clientMessage = 0;
-        return TRUE;
-    }
-    return FALSE;
-}
-
-BOOL processAndForwardServerMessage(void)
-{
-    return FALSE;
-}
-
-BOOL sendMessage(UDP_SOCKET socket, dhcpBufferItem_t* message) {
+BOOL sendMessage(UDP_SOCKET socket, dhcpBuffer_t* message) {
     WORD size = sizeof(BOOTP_HEADER) + message->dataLength;
     //DisplayString(0, "sending message");
+    // Ready the socket for transmision
     if(UDPIsPutReady(socket) < size) {
         //DisplayString(0, "not enough putroom");
         return FALSE;
     }
 
+    // Fill in the header
     UDPPutArray((BYTE*)message->BOOTPHeader, sizeof(BOOTP_HEADER));
+    // Fill in the payload
     UDPPutArray((BYTE*)message->packetData, message->dataLength);
 
     // Transmit the packet
     UDPFlush();
-    DisplayString(0, "flushing");
     return TRUE;
 }

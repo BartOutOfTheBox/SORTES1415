@@ -11,14 +11,32 @@
 #include "DHCPBuffer.h"
 #include "Include/GenericTypeDefs.h"
 
+/**
+ * Listen on a socket and store any received dhcp packets in the given buffer
+ *
+ * @param socket The socket to read from
+ * @param buffer The buffer to store the DHCP packet in
+ */
 void listen(UDP_SOCKET socket, dhcpBuffer_t* buffer);
 
 void receiveDHCPFromClientTask(void)
 {
     if (!DHCPClientBuffer)
-        DisplayString(0, "buffer = gone");
-    else
-        listen(DHCPClientSocket, DHCPClientBuffer);
+        return;
+    else if (DHCPClientBuffer.free) {
+        // Buffer free, listen for incoming broadcasts
+        listen(DHCPClientSocket, &DHCPClientBuffer);
+    }
+}
+
+void receiveDHCPFromServerTask(void)
+{
+    if (!DHCPServerBuffer)
+        return;
+    else if (DHCPServerBuffer.free) {
+        // Buffer free, listen for incoming replies
+        listen(DHCPServerSocket, &DHCPServerBuffer);
+    }
 }
 
 /**
@@ -68,6 +86,7 @@ void listen(UDP_SOCKET socket, dhcpBuffer_t* buffer) {
     packetData = (BYTE *) malloc(availableData);
     if (!packetData)
     {
+        // Not enough room for payload. Free header and discard the UDP packet
         DisplayString(0, "no room for data");
         free((unsigned char _MALLOC_SPEC*) BOOTPHeader);
         UDPDiscard();
@@ -81,10 +100,11 @@ void listen(UDP_SOCKET socket, dhcpBuffer_t* buffer) {
         dataCount++;
     }
 
-    // Add it to the buffer
-    addToDHCPBuffer(buffer, BOOTPHeader, packetData, availableData);
-    //addToDHCPBuffer(0, BOOTPHeader, packetData, availableData);
+    buffer->BOOTPHeader = BOOTPHeader;
+    buffer->packetData = packetData;
+    buffer->dataLength = availableData;
+    buffer->free = FALSE;
 
-    // Discard the rest of the packet
+    // Discard any remaining bytes in the packet that didn't get read
     UDPDiscard();
 }

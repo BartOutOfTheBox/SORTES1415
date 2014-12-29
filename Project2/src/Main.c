@@ -117,9 +117,13 @@ UDP_SOCKET DHCPServerSocket;
 UDP_SOCKET DHCPClientSocket;
 NODE_INFO DHCP_Server;
 
-dhcpBuffer_t* DHCPClientBuffer;
-dhcpBuffer_t* DHCPServerBuffer;
+// Buffer for broadcasts from clients
+dhcpBuffer_t DHCPClientBuffer;
+// Buffer for replies from servers
+dhcpBuffer_t DHCPServerBuffer;
 
+// Application is still initializing
+BOOL initState = TRUE;
 
 // Private helper functions.
 // These may or may not be present in all applications.
@@ -128,62 +132,11 @@ static void InitializeBoard(void);
 void DisplayWORD(BYTE pos, WORD w); //write WORDs on LCD for debugging
 static void InitializeDHCPRelay(void);
 
-//
-// PIC18 Interrupt Service Routines
-// 
-// NOTE: Several PICs, including the PIC18F4620 revision A3 have a RETFIE 
-// FAST/MOVFF bug
-// The interruptlow keyword is used to work around the bug when using C18
-
-//LowISR
-#if defined(__18CXX)
-    #if defined(HI_TECH_C)
-        void interrupt low_priority LowISR(void)
-    #elif defined(__SDCC__)
-        void LowISR(void) __interrupt (2) //ML for sdcc
-    #else
-        #pragma interruptlow LowISR
-        void LowISR(void)
-    #endif
-    {
-	TickUpdate();
-    }
-    #if !defined(__SDCC__) && !defined(HI_TECH_C)
-           //automatic with these compilers
-        #pragma code lowVector=0x18
-	void LowVector(void){_asm goto LowISR _endasm}
-	#pragma code // Return to default code section
-    #endif
-
-
-//HighISR	
-    #if defined(HI_TECH_C)
-        void interrupt HighISR(void)
-    #elif defined(__SDCC__)
-        void HighISR(void) __interrupt(1) //ML for sdcc        
-    #else
-        #pragma interruptlow HighISR
-        void HighISR(void)
-    #endif
-    {
-      //insert here code for high level interrupt, if any
-    }
-    #if !defined(__SDCC__) && !defined(HI_TECH_C)
-           //automatic with these compilers
-	#pragma code highVector=0x8
-	void HighVector(void){_asm goto HighISR _endasm}
-	#pragma code // Return to default code section
-    #endif
-
-#endif
-
 const char* message;  //pointer to message to display on LCD
 
 //
 // Main application entry point.
 //
-
-
 #if defined(__18CXX) || defined(__SDCC__)
 void main(void)
 #else
@@ -203,7 +156,7 @@ static DWORD dwLastIP = 0;
     // Initialize and display message on the LCD
     LCDInit();
     DelayMs(100);
-    DisplayString (0,"Relaying the future, today"); //first arg is start position on 32 pos LCD
+    DisplayString (0,"Relaying the future, today");
 
     // Initialize Timer0, and low priority interrupts, used as clock.
     TickInit();
@@ -215,9 +168,11 @@ static DWORD dwLastIP = 0;
     // application modules (HTTP, SNMP, etc.)
     StackInit();
 
-    // Initialize application
-    InitializeDHCPRelay();
-
+    // Set DHCP Server IP Address
+    DHCP_Server.IPAddr.Val = DEFAULT_SERVER_IP_ADDR_BYTE1 |
+                       DEFAULT_SERVER_IP_ADDR_BYTE2<<8ul | DEFAULT_SERVER_IP_ADDR_BYTE3<<16ul |
+                       DEFAULT_SERVER_IP_ADDR_BYTE4<<24ul;
+    ARPResolve(&DHCP_Server.IPAddr); // Lookup MAC for DHCP Server
 
     // Now that all items are initialized, begin the co-operative
     // multitasking loop.  This infinite loop will continuously 
@@ -235,24 +190,45 @@ static DWORD dwLastIP = 0;
 
     while(1)
     {
-
-         // Blink LED0 (right most one) every second.
-        nt =  TickGetDiv256();
-        if((nt - t) >= (DWORD)(TICK_SECOND/1024ul))
-        {
-            t = nt;
-            LED0_IO ^= 1;
-            ClrWdt();  //Clear the watchdog
-        }
-
         // This task performs normal stack task including checking
         // for incoming packet, type of packet and calling
         // appropriate stack entity to process it.
         StackTask();
 
-        receiveDHCPFromClientTask();
-        processClientMessage();
+        nt =  TickGetDiv256();
+        if (initState) {
+            // Blink LED1 (middle one) every second.
+            if((nt - t) >= (DWORD)(TICK_SECOND/1024ul))
+            {
+                t = nt;
+                LED1_IO ^= 1;
+                ClrWdt();  //Clear the watchdog
+            }
+
+            // If ARP is resolved, open sockets
+            if (ARPIsResolved(&DHCP_Server.IPAddr, &DHCP_Server.MACAddr)) {
+                LED1_IO ^= 0;
+                initState = FALSE;
+                InitializeDHCPRelay();
+            }
+        }
+        else {
+            // Blink LED0 (right most one) every second.
+            if((nt - t) >= (DWORD)(TICK_SECOND/1024ul))
+            {
+                t = nt;
+                LED0_IO ^= 1;
+                ClrWdt();  //Clear the watchdog
+            }
+
+            receiveDHCPFromClientTask();
+            receiveDHCPFromServerTask();
+            processClientMessage();
+            processServerMessage();
+        }
+
         
+
     }//end of while(1)
 }//end of main()
 
@@ -261,57 +237,21 @@ void InitializeDHCPRelay(void)
     // Initialize the heap in the declared heap character array.
     _initHeap(heap, 1024);
 
-    // Allocate the buffers
-    DHCPClientBuffer = createNewBuffer();
-    DHCPServerBuffer = createNewBuffer();
-
     // Open the socket to listen to client broadcasts
     DHCPClientSocket = UDPOpen(DHCP_SERVER_PORT, NULL, DHCP_CLIENT_PORT);
     if(DHCPClientSocket == INVALID_UDP_SOCKET) {
-        printError("Invalid DHCP Client Socket");
+        DisplayString(0, "Invalid DHCP Client Socket");
         return;
     }
 
     // Open the socket to listen to server messages
-    // TODO: set NODE_INFO for server
-    DHCPServerSocket = UDPOpen(DHCP_SERVER_PORT, NULL, DHCP_SERVER_PORT);
+    DHCPServerSocket = UDPOpen(DHCP_SERVER_PORT, &DHCP_Server, DHCP_SERVER_PORT);
     if(DHCPServerSocket == INVALID_UDP_SOCKET) {
-        printError("Invalid DHCP Server Socket");
+        DisplayString(0, "Invalid DHCP Server Socket");
         return;
     }
 }
 
-void printError(char* error) {
-    DisplayString (0, error);
-}
-
-/*************************************************
- Function DisplayWORD:
- writes a WORD in hexa on the position indicated by
- pos. 
- - pos=0 -> 1st line of the LCD
- - pos=16 -> 2nd line of the LCD
-
- __SDCC__ only: for debugging
-*************************************************/
-#if defined(__SDCC__)
-void DisplayWORD(BYTE pos, WORD w) //WORD is a 16 bits unsigned
-{
-    BYTE WDigit[6]; //enough for a  number < 65636: 5 digits + \0
-    BYTE j;
-    BYTE LCDPos=0;  //write on first line of LCD
-    unsigned radix=10; //type expected by sdcc's ultoa()
-
-    LCDPos=pos;
-    ultoa(w, WDigit, radix);      
-    for(j = 0; j < strlen((char*)WDigit); j++)
-    {
-       LCDText[LCDPos++] = WDigit[j];
-    }
-    if(LCDPos < 32u)
-       LCDText[LCDPos] = 0;
-    LCDUpdate();
-}
 /*************************************************
  Function DisplayString: 
  Writes an IP address to string to the LCD display
@@ -324,49 +264,6 @@ void DisplayString(BYTE pos, char* text)
    strlcpy((char*)&LCDText[pos], text,(l<max)?l:max );
    LCDUpdate();
 
-}
-#endif
-
-/*************************************************
- Function DisplayIPValue: 
- Writes an IP address to the LCD display
-*************************************************/
-
-#if defined(__SDCC__)
-void DisplayIPValue(DWORD IPdw) // 32 bits
-#else
-void DisplayIPValue(IP_ADDR IPVal) 
-#endif
-{
-    BYTE IPDigit[4]; //enough for a number <256: 3 digits + \0
-    BYTE i;
-    BYTE j;
-    BYTE LCDPos=16;  //write on second line of LCD
-#if defined(__SDCC__)
-    unsigned int IP_field, radix=10; //type expected by sdcc's uitoa()
-#endif
-
-    for(i = 0; i < sizeof(IP_ADDR); i++) //sizeof(IP_ADDR) is 4
-    {
-#if defined(__SDCC__)
-       IP_field =(WORD)(IPdw>>(i*8))&0xff;      //ML
-       uitoa(IP_field, IPDigit, radix);      //ML
-#else
-       uitoa((WORD)IPVal.v[i], IPDigit);
-#endif
-
-       for(j = 0; j < strlen((char*)IPDigit); j++)
-       {
-	   LCDText[LCDPos++] = IPDigit[j];
-       }
-       if(i == sizeof(IP_ADDR)-1)
-	    break;
-       LCDText[LCDPos++] = '.';
-
-    }
-    if(LCDPos < 32u)
-       LCDText[LCDPos] = 0;
-    LCDUpdate();
 }
 
 
@@ -482,6 +379,55 @@ static void InitAppConfig(void)
             MY_DEFAULT_SECONDARY_DNS_BYTE3<<16ul  | 
             MY_DEFAULT_SECONDARY_DNS_BYTE4<<24ul;
 }
+
+//
+// PIC18 Interrupt Service Routines
+//
+// NOTE: Several PICs, including the PIC18F4620 revision A3 have a RETFIE
+// FAST/MOVFF bug
+// The interruptlow keyword is used to work around the bug when using C18
+
+//LowISR
+#if defined(__18CXX)
+    #if defined(HI_TECH_C)
+        void interrupt low_priority LowISR(void)
+    #elif defined(__SDCC__)
+        void LowISR(void) __interrupt (2) //ML for sdcc
+    #else
+        #pragma interruptlow LowISR
+        void LowISR(void)
+    #endif
+    {
+    TickUpdate();
+    }
+    #if !defined(__SDCC__) && !defined(HI_TECH_C)
+           //automatic with these compilers
+        #pragma code lowVector=0x18
+    void LowVector(void){_asm goto LowISR _endasm}
+    #pragma code // Return to default code section
+    #endif
+
+
+//HighISR
+    #if defined(HI_TECH_C)
+        void interrupt HighISR(void)
+    #elif defined(__SDCC__)
+        void HighISR(void) __interrupt(1) //ML for sdcc
+    #else
+        #pragma interruptlow HighISR
+        void HighISR(void)
+    #endif
+    {
+      //insert here code for high level interrupt, if any
+    }
+    #if !defined(__SDCC__) && !defined(HI_TECH_C)
+           //automatic with these compilers
+    #pragma code highVector=0x8
+    void HighVector(void){_asm goto HighISR _endasm}
+    #pragma code // Return to default code section
+    #endif
+
+#endif
 
 /*-------------------------------------------------------------------------
  *

@@ -66,32 +66,29 @@
 
 #define BAUD_RATE       (19200)		// bps
 
+#define DEFAULT_SERVER_IP_ADDR_BYTE1        (192ul)
+#define DEFAULT_SERVER_IP_ADDR_BYTE2        (168ul)
+#define DEFAULT_SERVER_IP_ADDR_BYTE3        (96ul)
+#define DEFAULT_SERVER_IP_ADDR_BYTE4        (250ul)
+
 #if !defined(THIS_IS_STACK_APPLICATION)
 	extern BYTE AN0String[8];
 #endif
 
 // An actual function defined in Main.c for displaying the current IP
 // address on the LCD.
-#if defined(__SDCC__)
-    void DisplayIPValue(DWORD IPVal);
-    void DisplayString(BYTE pos, char* text);
-    void DisplayWORD(BYTE pos, WORD w);
-#else
-    void DisplayIPValue(IP_ADDR IPVal);
-#endif
+void DisplayString(BYTE pos, char* text);
 
 // Include all headers for any enabled TCPIP Stack functions
 
 void initializeDHCPRelay(void);
 
-void printError(char* error);
-
 extern UDP_SOCKET DHCPServerSocket;
 extern UDP_SOCKET DHCPClientSocket;
 extern NODE_INFO DHCP_Server;
 
-extern dhcpBuffer_t* DHCPClientBuffer;
-extern dhcpBuffer_t* DHCPServerBuffer;
+extern dhcpBuffer_t DHCPClientBuffer;
+extern dhcpBuffer_t DHCPServerBuffer;
 
 
 #endif // _MAIN_H

@@ -27,6 +27,7 @@ struct dhcpBuffer {
     dhcpBufferItem_t* tail;
 };
 
+dhcpBuffer_t* createNewBuffer(void);
 void addToDHCPBuffer(dhcpBuffer_t* buffer, BOOTP_HEADER* header, BYTE* data, WORD dataLength);
 
 dhcpBufferItem_t* getFromDHCPBuffer(dhcpBuffer_t* buffer);

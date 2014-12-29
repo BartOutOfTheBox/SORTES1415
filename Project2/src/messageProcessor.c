@@ -26,13 +26,13 @@ void processClientMessage(void)
     {
         case Polling:
             clientMessage = getFromDHCPBuffer(DHCPClientBuffer);
-            if (clientMessage) {
+            if (clientMessage != 0) {
                 DisplayString(0, "got client message");
                 clientProcessorState = Processing;
             }
             break;
         case Processing:
-            DisplayString(0, "processing broadcast");
+            //DisplayString(0, "processing broadcast");
             if (processAndForwardClientMessage()) {
                 clientProcessorState = Polling;
             }
@@ -80,9 +80,9 @@ BOOL processAndForwardServerMessage(void)
 
 BOOL sendMessage(UDP_SOCKET socket, dhcpBufferItem_t* message) {
     WORD size = sizeof(BOOTP_HEADER) + message->dataLength;
-    DisplayString(0, "sending message");
+    //DisplayString(0, "sending message");
     if(UDPIsPutReady(socket) < size) {
-        DisplayString(0, "not enough putroom");
+        //DisplayString(0, "not enough putroom");
         return FALSE;
     }
 

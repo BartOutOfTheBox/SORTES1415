@@ -30,12 +30,13 @@ void receiveDHCPFromClientTask(void)
 void listen(UDP_SOCKET socket, dhcpBuffer_t* buffer) {
     WORD availableData; // data in packet
     BYTE* packetData; // packetData
-    WORD dataCount = 0;
+    WORD dataCount;
     BOOTP_HEADER* BOOTPHeader; // packetHeader
     char debugString[32]; // for debugging purposes
 
     // Check to see if a valid DHCP packet has arrived
-    if(UDPIsGetReady(socket) < 241u)
+    availableData = UDPIsGetReady(socket);
+    if(availableData < 241u)
         return;
 
     // Read the header
@@ -43,17 +44,13 @@ void listen(UDP_SOCKET socket, dhcpBuffer_t* buffer) {
     if (!BOOTPHeader)
         return;
 
-    ///////////////////////////
-    // DEBUG #1
-    //
-    // Prints address of buffer
-    ///////////////////////////
-    sprintf(debugString, "%d",
-                       buffer);
-    //DisplayString(0, debugString);
-
     // Retrieve the BOOTP header
-    UDPGetArray((BYTE*)BOOTPHeader, sizeof(BOOTP_HEADER));
+    dataCount = 0;
+    // Use UDPGet instead of UDPGetArray as the latter seems to cause overflow
+    while (dataCount < sizeof(BOOTP_HEADER) && UDPGet((BYTE *)BOOTPHeader + dataCount)) {
+        dataCount++;
+    }
+//    UDPGetArray((BYTE*)BOOTPHeader, sizeof(BOOTP_HEADER));
 
     ///////////////////////////
     // DEBUG #2
@@ -61,13 +58,13 @@ void listen(UDP_SOCKET socket, dhcpBuffer_t* buffer) {
     // Prints address of buffer on first packet
     // Prints 0 of second buffer
     ///////////////////////////
-    sprintf(debugString, "%d",
-                   buffer);
-    //DisplayString(16, debugString);
+//    sprintf(debugString, "%d",
+//                   buffer);
+//    DisplayString(16, debugString);
 
 
     // Check how much data is left
-    availableData = UDPIsGetReady(socket);
+    availableData = availableData - sizeof(BOOTP_HEADER);
     packetData = (BYTE *) malloc(availableData);
     if (!packetData)
     {
@@ -78,12 +75,15 @@ void listen(UDP_SOCKET socket, dhcpBuffer_t* buffer) {
     }
 
     // Get the remaining data of the packet
+    dataCount = 0;
+    // Use UDPGet instead of UDPGetArray as the latter seems to cause overflow
     while( dataCount < availableData && UDPGet(packetData + dataCount) ) {
         dataCount++;
     }
 
     // Add it to the buffer
     addToDHCPBuffer(buffer, BOOTPHeader, packetData, availableData);
+    //addToDHCPBuffer(0, BOOTPHeader, packetData, availableData);
 
     // Discard the rest of the packet
     UDPDiscard();

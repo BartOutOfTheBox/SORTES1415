@@ -251,8 +251,6 @@ static DWORD dwLastIP = 0;
         StackTask();
 
         receiveDHCPFromClientTask();
-        if (!DHCPClientBuffer)
-            DisplayString(0, "where is the buffer?");
         processClientMessage();
         
     }//end of while(1)
@@ -264,8 +262,8 @@ void InitializeDHCPRelay(void)
     _initHeap(heap, 1024);
 
     // Allocate the buffers
-    DHCPClientBuffer = (dhcpBuffer_t *) malloc(sizeof(dhcpBuffer_t));
-    DHCPServerBuffer = (dhcpBuffer_t *) malloc(sizeof(dhcpBuffer_t));
+    DHCPClientBuffer = createNewBuffer();
+    DHCPServerBuffer = createNewBuffer();
 
     // Open the socket to listen to client broadcasts
     DHCPClientSocket = UDPOpen(DHCP_SERVER_PORT, NULL, DHCP_CLIENT_PORT);
@@ -451,7 +449,7 @@ static void InitializeBoard(void)
 
 static void InitAppConfig(void)
 {
-	AppConfig.Flags.bIsDHCPEnabled = FALSE;
+	AppConfig.Flags.bIsDHCPEnabled = TRUE;
 	AppConfig.Flags.bInConfigMode = TRUE;
 
 //ML using sdcc (MPLAB has a trick to generate serial numbers)

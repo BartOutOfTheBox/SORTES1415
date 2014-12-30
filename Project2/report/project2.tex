@@ -100,26 +100,39 @@ To test the board, you can enable a DHCP client in the subnet of the DHCP relay 
 
 The following tests have been run to confirm the correct working of the agent:
 \begin{itemize}
-\item Eerste test
-\item Tweede test
+\item A single PC connecting to the network and requesting a new IP
+\item Multiple PC's connecting to the network at the same time and requesting a new IP
+\item A PC with a static IP connecting to the network
+\item A PC reconnecting to the network and requesting their old IP
+\item A PC connected to the network for a longer period of time and renewing its lease
 \end{itemize}
 
 \section{Design Decisions}
 
-The code of this relay agent was produced by translating ASG diagramma \ref{fig:asg} to C.
+The code of this relay agent was produced by translating ASG diagrams \ref{fig:asg} and \ref{fig:asgRelaying} to C.
 As described in the ASG diagram, the relay agent has two components. One component receives ip packages, the other component sends ip packages. TODO VERDERE UITLEG
 
 \begin{figure}
-	\label{fig:asg}
 	\centering
-	\includegraphics[width=1.0\textwidth]{ASG.jpg}
-	\caption{ASG diagram of the DHCP Relay Agent.}
+	\includegraphics[width=1.0\textwidth]{../img/dhcprelay-asg.png}
+	\caption{ASG diagram of the DHCP Relay Agent.\label{fig:asg}}
 \end{figure}
 
-\subsection{Buffer size}
-The internal buffer from which one component of the application consumes and for which the other component of the application produces ip packages, has a size of one. This means that the two components of the application are tightly coupled. The consumer component has to consume the last packet before the producer can produce a new one. This limitation makes sure there is enough memmory on the processor to hold the buffer. While this may seem like a heavy limitation, it is really not. The TCP/IP stack implementation provided does also work with only one packet. 
+\begin{figure}
+	\centering
+	\includegraphics[width=1.0\textwidth]{../img/relaying-asg.png}
+	\caption{ASG diagram of the Relaying state.\label{fig:asgRelaying}}
+\end{figure}
 
-\subsection{}
+\subsection{Seperate Client/Server components}
+
+\subsection{Seperate Receive/Process components}
+
+\subsection{Buffer size}
+The internal buffers from which the processing-components of the application consume and for which the receiving-components of the application produce dhcp packages, have a size of one. This means that each pair of components (receiver-processor) of the application are tightly coupled. The consumer component has to consume the last packet before the producer can produce a new one. This limitation makes sure there is enough memory on the processor to hold the buffer. While this may seem like a heavy limitation, it is really not. The TCP/IP stack implementation provided does also work with only one packet.\\
+Given enough memory, this buffer could easily be extended to contain more than one message. This would not affect the workings of the components 
+
+\subsection{Immeadiate state changes}
 
 \newpage
 
@@ -127,10 +140,10 @@ The internal buffer from which one component of the application consumes and for
 \section{Code}
 
 \subsection{main.h}
-\lstinputlisting[language=C]{../src/main.h}
+\lstinputlisting[language=C]{../src/Main.h}
 
 \subsection{main.c}
-\lstinputlisting[language=C]{../src/main.c}
+\lstinputlisting[language=C]{../src/Main.c}
 
 \subsection{messageProcessor.h}
 \lstinputlisting[language=C]{../src/messageProcessor.h}

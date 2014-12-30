@@ -63,7 +63,7 @@ void listen(UDP_SOCKET socket, dhcpBuffer_t* buffer) {
     availableData = UDPIsGetReady(socket);
     if(availableData < 241u)
         return;
-    // Read the header
+    // Allocate the header
     BOOTPHeader = (BOOTP_HEADER *) malloc(sizeof(BOOTP_HEADER));
     if (!BOOTPHeader) {
         DisplayString(16, "no room for header");
@@ -73,10 +73,10 @@ void listen(UDP_SOCKET socket, dhcpBuffer_t* buffer) {
 
     // Retrieve the BOOTP header
     UDPGetArray((BYTE*)BOOTPHeader, sizeof(BOOTP_HEADER));
-    // Use UDPGet instead of UDPGetArray as the latter seems to cause overflow
     //for (i = 0; i < sizeof(BOOTP_HEADER) && UDPGet((BYTE *)BOOTPHeader + i); i++);
 
     availableData = availableData - sizeof(BOOTP_HEADER);
+    // Allocate the payload
     packetData = (BYTE *) malloc(availableData);
     if (!packetData)
     {
@@ -92,12 +92,13 @@ void listen(UDP_SOCKET socket, dhcpBuffer_t* buffer) {
     // Let the server/client decide if it is needed or not
     for(i = 0; i < 64+128+(16-sizeof(MAC_ADDR)); i++)
         UDPGet(packetData + i);
-
     dataCount = i;
+
     // Obtain Magic Cookie.
     // Let the server/client verify it
     UDPGetArray((BYTE*)(packetData + dataCount), sizeof(DWORD));
     dataCount += sizeof(DWORD);
+
     // Obtain options
     while(dataCount < availableData)
     {
@@ -112,29 +113,22 @@ void listen(UDP_SOCKET socket, dhcpBuffer_t* buffer) {
         // Get option length
         UDPGet(Len);
         if (Len + *Len > packetData + availableData) {
+            // Invalid packet
             UDPDiscard();
+            free((unsigned char _MALLOC_SPEC*) BOOTPHeader);
+            free((unsigned char _MALLOC_SPEC*) packetData);
+            return;
         }
 
         // Read option
-        for (i = 0; i < *Len && UDPGet((BYTE*)(packetData + dataCount + i)); i++);
-        UDPGetArray((BYTE*)(packetData + dataCount), *Len);
-        dataCount += *Len;
+        // for (i = 0; i < *Len && UDPGet((BYTE*)(packetData + dataCount + i)); i++);
+        dataCount += UDPGetArray((BYTE*)(packetData + dataCount), *Len);
     }
     if (dataCount > availableData) {
         dataCount = availableData;
     }
     // Discard any remaining bytes in the packet that didn't get read
     UDPDiscard();
-    ///////////////////////////
-    // DEBUG #2
-    //
-    // Prints address of buffer on first packet
-    // Prints 0 of second buffer
-    ///////////////////////////
-//    sprintf(debugString, "%d",
-//                   buffer);
-//    DisplayString(16, debugString);
-
 
     // Store the data
     buffer->BOOTPHeader = BOOTPHeader;

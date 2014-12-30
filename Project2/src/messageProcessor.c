@@ -13,29 +13,32 @@ BOOL sendMessage(UDP_SOCKET socket, dhcpBuffer_t* message);
 
 void processClientMessage(void)
 {
-    if (!DHCPClientBuffer.free)
+    if (!DHCPClientBuffer->free)
     {
+        //DisplayString(0, "got client msg");
         // Broadcast available. Process it and attempt to relay it.
         // Set Relay IP to own IP
-        DHCPClientBuffer.BOOTPHeader->RelayAgentIP.Val = AppConfig.MyIPAddr.Val;
+        DHCPClientBuffer->BOOTPHeader->RelayAgentIP.Val = AppConfig.MyIPAddr.Val;
         // Forward message to server
-        if (sendMessage(DHCPServerSocket, &DHCPClientBuffer)) {
+        if (sendMessage(DHCPServerSocket, DHCPClientBuffer)) {
             // Free buffer
-            freeDHCPBuffer(&DHCPClientBuffer);
+            freeDHCPBuffer(DHCPClientBuffer);
+            //DisplayString(16, "sent to server");
         }
     }
 }
 
 void processServerMessage(void)
 {
-    if (!DHCPServerBuffer.free)
+    if (!DHCPServerBuffer->free)
     {
         // Reply available. Attempt to relay it.
-        DisplayString(0, "got server msg!");
+        //DisplayString(0, "got server msg");
         // Broadcast message
-        if (sendMessage(DHCPClientSocket, &DHCPServerBuffer)) {
+        if (sendMessage(DHCPClientSocket, DHCPServerBuffer)) {
             // Free buffer
-            freeDHCPBuffer(&DHCPServerBuffer);
+            freeDHCPBuffer(DHCPServerBuffer);
+            //DisplayString(16, "broadcasted");
         }
     }
 }
@@ -45,7 +48,7 @@ BOOL sendMessage(UDP_SOCKET socket, dhcpBuffer_t* message) {
     //DisplayString(0, "sending message");
     // Ready the socket for transmision
     if(UDPIsPutReady(socket) < size) {
-        //DisplayString(0, "not enough putroom");
+        UDPFlush();
         return FALSE;
     }
 

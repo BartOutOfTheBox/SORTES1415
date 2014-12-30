@@ -118,12 +118,14 @@ UDP_SOCKET DHCPClientSocket;
 NODE_INFO DHCP_Server;
 
 // Buffer for broadcasts from clients
-dhcpBuffer_t DHCPClientBuffer;
+dhcpBuffer_t* DHCPClientBuffer;
 // Buffer for replies from servers
-dhcpBuffer_t DHCPServerBuffer;
+dhcpBuffer_t* DHCPServerBuffer;
 
 // Application is still initializing
 BOOL initState = TRUE;
+typedef enum { Initialization, ARPSend, WaitForARPReply, Relaying } relayState_t;
+relayState_t currentState = Initialization;
 
 // Private helper functions.
 // These may or may not be present in all applications.
@@ -133,6 +135,10 @@ void DisplayWORD(BYTE pos, WORD w); //write WORDs on LCD for debugging
 static void InitializeDHCPRelay(void);
 
 const char* message;  //pointer to message to display on LCD
+
+WORD arpTime;
+WORD arpMaxTime = (TICK_SECOND/4)/256;
+int arpRetryCount;
 
 //
 // Main application entry point.
@@ -156,7 +162,8 @@ static DWORD dwLastIP = 0;
     // Initialize and display message on the LCD
     LCDInit();
     DelayMs(100);
-    DisplayString (0,"Relaying the future, today");
+    DisplayString(0,"Relaying the");
+    DisplayString(16,"future, today.");
 
     // Initialize Timer0, and low priority interrupts, used as clock.
     TickInit();
@@ -172,7 +179,8 @@ static DWORD dwLastIP = 0;
     DHCP_Server.IPAddr.Val = DEFAULT_SERVER_IP_ADDR_BYTE1 |
                        DEFAULT_SERVER_IP_ADDR_BYTE2<<8ul | DEFAULT_SERVER_IP_ADDR_BYTE3<<16ul |
                        DEFAULT_SERVER_IP_ADDR_BYTE4<<24ul;
-    ARPResolve(&DHCP_Server.IPAddr); // Lookup MAC for DHCP Server
+
+    currentState = ARPSend;
 
     // Now that all items are initialized, begin the co-operative
     // multitasking loop.  This infinite loop will continuously 
@@ -196,7 +204,7 @@ static DWORD dwLastIP = 0;
         StackTask();
 
         nt =  TickGetDiv256();
-        if (initState) {
+        if (currentState == ARPSend || currentState == WaitForARPReply) {
             // Blink LED1 (middle one) every second.
             if((nt - t) >= (DWORD)(TICK_SECOND/1024ul))
             {
@@ -204,31 +212,59 @@ static DWORD dwLastIP = 0;
                 LED1_IO ^= 1;
                 ClrWdt();  //Clear the watchdog
             }
-
-            // If ARP is resolved, open sockets
-            if (ARPIsResolved(&DHCP_Server.IPAddr, &DHCP_Server.MACAddr)) {
-                LED1_IO ^= 0;
-                initState = FALSE;
-                InitializeDHCPRelay();
-            }
         }
-        else {
-            // Blink LED0 (right most one) every second.
-            if((nt - t) >= (DWORD)(TICK_SECOND/1024ul))
-            {
-                t = nt;
-                LED0_IO ^= 1;
-                ClrWdt();  //Clear the watchdog
-            }
+        switch (currentState)
+        {
+            case ARPSend:
+               ARPResolve(&DHCP_Server.IPAddr); // Lookup MAC for DHCP Server
+               arpTime = (WORD)nt;
+               currentState = WaitForARPReply;
+               break;
+            case WaitForARPReply:
+                // If ARP is resolved, open sockets
+                if (ARPIsResolved(&DHCP_Server.IPAddr, &DHCP_Server.MACAddr)) {
+                    LED1_IO = 0;
+                    InitializeDHCPRelay();
+                    currentState = Relaying;
+                }
+                else {
+                    // Time out if too much time is spent in this state
+                    // Note that this will continuously send out ARP
+                    // requests for an infinite time if the Gateway
+                    // never responds
+                    if((WORD)nt - arpTime > arpMaxTime)
+                    {
+                        // Exponentially increase timeout until we reach 6 attempts then stay constant
+                        if(arpRetryCount < 6)
+                        {
+                            arpRetryCount++;
+                            arpMaxTime <<= 1;
+                        }
 
-            receiveDHCPFromClientTask();
-            receiveDHCPFromServerTask();
-            processClientMessage();
-            processServerMessage();
+                        // Retransmit ARP request
+                        currentState = ARPSend;
+                    }
+                }
+                break;
+            case Relaying:
+                // Blink LED0 (right most one) every second.
+                if((nt - t) >= (DWORD)(TICK_SECOND/1024ul))
+                {
+                    t = nt;
+                    LED0_IO ^= 1;
+                    ClrWdt();  //Clear the watchdog
+                }
+
+                // Check incoming broadcasts
+                receiveDHCPFromClientTask();
+                // Check incoming server replies
+                receiveDHCPFromServerTask();
+                // Process and relay received broadcasts
+                processClientMessage();
+                // Process and relay received server replies
+                processServerMessage();
+                break;
         }
-
-        
-
     }//end of while(1)
 }//end of main()
 
@@ -236,6 +272,11 @@ void InitializeDHCPRelay(void)
 {
     // Initialize the heap in the declared heap character array.
     _initHeap(heap, 1024);
+
+    DHCPClientBuffer = (dhcpBuffer_t*) malloc(sizeof(dhcpBuffer_t));
+    DHCPClientBuffer->free = TRUE;
+    DHCPServerBuffer = (dhcpBuffer_t*) malloc(sizeof(dhcpBuffer_t));
+    DHCPServerBuffer->free = TRUE;
 
     // Open the socket to listen to client broadcasts
     DHCPClientSocket = UDPOpen(DHCP_SERVER_PORT, NULL, DHCP_CLIENT_PORT);
@@ -254,7 +295,7 @@ void InitializeDHCPRelay(void)
 
 /*************************************************
  Function DisplayString: 
- Writes an IP address to string to the LCD display
+ Writes a string to the LCD display
  starting at pos
 *************************************************/
 void DisplayString(BYTE pos, char* text)
@@ -346,17 +387,20 @@ static void InitializeBoard(void)
 
 static void InitAppConfig(void)
 {
-	AppConfig.Flags.bIsDHCPEnabled = TRUE;
+	AppConfig.Flags.bIsDHCPEnabled = FALSE;
 	AppConfig.Flags.bInConfigMode = TRUE;
 
 //ML using sdcc (MPLAB has a trick to generate serial numbers)
 // first 3 bytes indicate manufacturer; last 3 bytes are serial number
+	// set last 3 bits to 0 to match MAC-address used by bootloader,
+	// using a different MAC will confuse your pc making you unable to
+	// upload software
 	AppConfig.MyMACAddr.v[0] = 0;
 	AppConfig.MyMACAddr.v[1] = 0x04;
 	AppConfig.MyMACAddr.v[2] = 0xA3;
-	AppConfig.MyMACAddr.v[3] = 0x01;
-	AppConfig.MyMACAddr.v[4] = 0x02;
-	AppConfig.MyMACAddr.v[5] = 0x03;
+	AppConfig.MyMACAddr.v[3] = 0x00;
+	AppConfig.MyMACAddr.v[4] = 0x00;
+	AppConfig.MyMACAddr.v[5] = 0x00;
 
 //ML if you want to change, see TCPIPConfig.h
 	AppConfig.MyIPAddr.Val = MY_DEFAULT_IP_ADDR_BYTE1 | 

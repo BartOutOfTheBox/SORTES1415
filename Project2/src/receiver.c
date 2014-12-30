@@ -21,11 +21,12 @@ void listen(UDP_SOCKET socket, dhcpBuffer_t* buffer);
 
 void receiveDHCPFromClientTask(void)
 {
-    if (!DHCPClientBuffer)
+    if (!DHCPClientBuffer) {
         return;
-    else if (DHCPClientBuffer.free) {
+    }
+    else if (DHCPClientBuffer->free) {
         // Buffer free, listen for incoming broadcasts
-        listen(DHCPClientSocket, &DHCPClientBuffer);
+        listen(DHCPClientSocket, DHCPClientBuffer);
     }
 }
 
@@ -33,9 +34,9 @@ void receiveDHCPFromServerTask(void)
 {
     if (!DHCPServerBuffer)
         return;
-    else if (DHCPServerBuffer.free) {
+    else if (DHCPServerBuffer->free) {
         // Buffer free, listen for incoming replies
-        listen(DHCPServerSocket, &DHCPServerBuffer);
+        listen(DHCPServerSocket, DHCPServerBuffer);
     }
 }
 
@@ -50,38 +51,27 @@ void listen(UDP_SOCKET socket, dhcpBuffer_t* buffer) {
     BYTE* packetData; // packetData
     WORD dataCount;
     BOOTP_HEADER* BOOTPHeader; // packetHeader
+    BYTE i;
+    BYTE* Option;
+    BYTE* Len;
     char debugString[32]; // for debugging purposes
-
     // Check to see if a valid DHCP packet has arrived
     availableData = UDPIsGetReady(socket);
     if(availableData < 241u)
         return;
-
     // Read the header
     BOOTPHeader = (BOOTP_HEADER *) malloc(sizeof(BOOTP_HEADER));
-    if (!BOOTPHeader)
+    if (!BOOTPHeader) {
+        DisplayString(16, "no room for header");
+        UDPDiscard();
         return;
+    }
 
     // Retrieve the BOOTP header
-    dataCount = 0;
+    UDPGetArray((BYTE*)BOOTPHeader, sizeof(BOOTP_HEADER));
     // Use UDPGet instead of UDPGetArray as the latter seems to cause overflow
-    while (dataCount < sizeof(BOOTP_HEADER) && UDPGet((BYTE *)BOOTPHeader + dataCount)) {
-        dataCount++;
-    }
-//    UDPGetArray((BYTE*)BOOTPHeader, sizeof(BOOTP_HEADER));
+    //for (i = 0; i < sizeof(BOOTP_HEADER) && UDPGet((BYTE *)BOOTPHeader + i); i++);
 
-    ///////////////////////////
-    // DEBUG #2
-    //
-    // Prints address of buffer on first packet
-    // Prints 0 of second buffer
-    ///////////////////////////
-//    sprintf(debugString, "%d",
-//                   buffer);
-//    DisplayString(16, debugString);
-
-
-    // Check how much data is left
     availableData = availableData - sizeof(BOOTP_HEADER);
     packetData = (BYTE *) malloc(availableData);
     if (!packetData)
@@ -93,18 +83,57 @@ void listen(UDP_SOCKET socket, dhcpBuffer_t* buffer) {
         return;
     }
 
-    // Get the remaining data of the packet
-    dataCount = 0;
-    // Use UDPGet instead of UDPGetArray as the latter seems to cause overflow
-    while( dataCount < availableData && UDPGet(packetData + dataCount) ) {
-        dataCount++;
-    }
+    // Read 10 bytes of hardware address,
+    // server host name, and boot file name
+    // Let the server/client decide if it is needed or not
+    for(i = 0; i < 64+128+(16-sizeof(MAC_ADDR)); i++)
+        UDPGet(packetData + i);
 
+    dataCount = i;
+    // Obtain Magic Cookie.
+    // Let the server/client verify it
+    UDPGetArray((BYTE*)(packetData + dataCount), sizeof(DWORD));
+    dataCount += sizeof(DWORD);
+    // Obtain options
+    while(dataCount < availableData)
+    {
+        // Get option type
+        Option = (BYTE*)(packetData + dataCount++);
+        if(!UDPGet(Option))
+            break;
+        if(*Option == DHCP_END_OPTION)
+            break;
+        Len = (BYTE*)(packetData + dataCount++);
+
+        // Get option length
+        UDPGet(Len);
+
+        // Read option
+        //for (i = 0; i < *Len && UDPGet((BYTE*)(packetData + dataCount + i)); i++);
+        UDPGetArray((BYTE*)(packetData + dataCount), *Len);
+        dataCount += *Len;
+    }
+    if (dataCount > availableData) {
+        dataCount = availableData;
+    }
+    // Discard any remaining bytes in the packet that didn't get read
+    UDPDiscard();
+    ///////////////////////////
+    // DEBUG #2
+    //
+    // Prints address of buffer on first packet
+    // Prints 0 of second buffer
+    ///////////////////////////
+//    sprintf(debugString, "%d",
+//                   buffer);
+//    DisplayString(16, debugString);
+
+
+    // Store the data
     buffer->BOOTPHeader = BOOTPHeader;
     buffer->packetData = packetData;
-    buffer->dataLength = availableData;
+    buffer->dataLength = dataCount;
     buffer->free = FALSE;
 
-    // Discard any remaining bytes in the packet that didn't get read
     UDPDiscard();
 }

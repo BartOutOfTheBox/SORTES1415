@@ -1,8 +1,10 @@
 /*
  * receiver.c
  *
+ * Checks for incoming DHCP messages and stores them in a buffer
+ *
  *  Created on: 15-dec.-2014
- *      Author: Arne
+ *      Author: Arne Van der Stappen & Bart Verhoeven
  */
 
 
@@ -19,6 +21,7 @@
  */
 void listen(UDP_SOCKET socket, dhcpBuffer_t* buffer);
 
+// Check for broadcasts from clients
 void receiveDHCPFromClientTask(void)
 {
     if (!DHCPClientBuffer) {
@@ -30,6 +33,7 @@ void receiveDHCPFromClientTask(void)
     }
 }
 
+// Check for replies from the server
 void receiveDHCPFromServerTask(void)
 {
     if (!DHCPServerBuffer)
@@ -107,9 +111,12 @@ void listen(UDP_SOCKET socket, dhcpBuffer_t* buffer) {
 
         // Get option length
         UDPGet(Len);
+        if (Len + *Len > packetData + availableData) {
+            UDPDiscard();
+        }
 
         // Read option
-        //for (i = 0; i < *Len && UDPGet((BYTE*)(packetData + dataCount + i)); i++);
+        for (i = 0; i < *Len && UDPGet((BYTE*)(packetData + dataCount + i)); i++);
         UDPGetArray((BYTE*)(packetData + dataCount), *Len);
         dataCount += *Len;
     }
@@ -134,6 +141,4 @@ void listen(UDP_SOCKET socket, dhcpBuffer_t* buffer) {
     buffer->packetData = packetData;
     buffer->dataLength = dataCount;
     buffer->free = FALSE;
-
-    UDPDiscard();
 }

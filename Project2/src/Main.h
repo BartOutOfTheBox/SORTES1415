@@ -3,7 +3,7 @@
  *                  Headers for DHCPRelay Main App
  *
  *********************************************************************
- * FileName:        Main.h
+ * FileName:        main.h
  * Dependencies:    Compiler.h
  * Processor:       PIC18, PIC24F, PIC24H, dsPIC30F, dsPIC33F, PIC32
  * Compiler:        Microchip C32 v1.05 or higher
@@ -66,6 +66,7 @@
 
 #define BAUD_RATE       (19200)		// bps
 
+// DHCP Server IP
 #define DEFAULT_SERVER_IP_ADDR_BYTE1        (192ul)
 #define DEFAULT_SERVER_IP_ADDR_BYTE2        (168ul)
 #define DEFAULT_SERVER_IP_ADDR_BYTE3        (96ul)
@@ -79,15 +80,14 @@
 // address on the LCD.
 void DisplayString(BYTE pos, char* text);
 
-// Include all headers for any enabled TCPIP Stack functions
-
-void initializeDHCPRelay(void);
-
+// UDP Socket for communication with DHCP Server
 extern UDP_SOCKET DHCPServerSocket;
+// UDP Socket for communication with DHCP Clients
 extern UDP_SOCKET DHCPClientSocket;
-extern NODE_INFO DHCP_Server;
 
+// Buffer for broadcasts from clients
 extern dhcpBuffer_t* DHCPClientBuffer;
+// Buffer for replies from server
 extern dhcpBuffer_t* DHCPServerBuffer;
 
 

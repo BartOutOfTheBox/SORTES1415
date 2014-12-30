@@ -1,8 +1,10 @@
 /*
  * Debug.h
  *
+ * Used for debugging the TCPIP_Stack
+ *
  *  Created on: 15-dec.-2014
- *      Author: Arne
+ *      Author: Arne Van der Stappen & Bart Verhoeven
  */
 
 #ifndef DEBUG_H_
@@ -17,11 +19,7 @@
 // An actual function defined in Main.c for displaying the current IP
 // address on the LCD.
 #if defined(__SDCC__)
-    void DisplayIPValue(DWORD IPVal);
     void DisplayString(BYTE pos, char* text);
-    void DisplayWORD(BYTE pos, WORD w);
-#else
-    void DisplayIPValue(IP_ADDR IPVal);
 #endif
 
 #endif /* DEBUG_H_ */

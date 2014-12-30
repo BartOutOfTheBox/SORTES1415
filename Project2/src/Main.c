@@ -111,19 +111,23 @@
 APP_CONFIG AppConfig;
 BYTE AN0String[8];
 
+// Heap
 unsigned char _MALLOC_SPEC heap[256];
 
+// UDP Socket for communication with DHCP Server
 UDP_SOCKET DHCPServerSocket;
-UDP_SOCKET DHCPClientSocket;
+// DHCP Server Info
 NODE_INFO DHCP_Server;
+
+// UDP Socket for communication with DHCP Clients
+UDP_SOCKET DHCPClientSocket;
 
 // Buffer for broadcasts from clients
 dhcpBuffer_t* DHCPClientBuffer;
-// Buffer for replies from servers
+// Buffer for replies from server
 dhcpBuffer_t* DHCPServerBuffer;
 
 // Application is still initializing
-BOOL initState = TRUE;
 typedef enum { Initialization, ARPSend, WaitForARPReply, Relaying } relayState_t;
 relayState_t currentState = Initialization;
 
@@ -131,14 +135,14 @@ relayState_t currentState = Initialization;
 // These may or may not be present in all applications.
 static void InitAppConfig(void);
 static void InitializeBoard(void);
-void DisplayWORD(BYTE pos, WORD w); //write WORDs on LCD for debugging
 static void InitializeDHCPRelay(void);
 
-const char* message;  //pointer to message to display on LCD
-
+// Time of last ARP request
 WORD arpTime;
+// Time to wait till next ARP Request
 WORD arpMaxTime = (TICK_SECOND/4)/256;
-int arpRetryCount;
+// ARP retries
+int arpRetryCount = 0;
 
 //
 // Main application entry point.
@@ -182,20 +186,6 @@ static DWORD dwLastIP = 0;
 
     currentState = ARPSend;
 
-    // Now that all items are initialized, begin the co-operative
-    // multitasking loop.  This infinite loop will continuously 
-    // execute all stack-related tasks, as well as your own
-    // application's functions.  Custom functions should be added
-    // at the end of this loop.
-
-    // Note that this is a "co-operative multi-tasking" mechanism
-    // where every task performs its tasks (whether all in one shot
-    // or part of it) and returns so that other tasks can do their
-    // job.
-    // If a task needs very long time to do its job, it must be broken
-    // down into smaller pieces so that other tasks can have CPU time.
-
-
     while(1)
     {
         // This task performs normal stack task including checking
@@ -203,16 +193,22 @@ static DWORD dwLastIP = 0;
         // appropriate stack entity to process it.
         StackTask();
 
+        // Blink LEDs every second.
         nt =  TickGetDiv256();
-        if (currentState == ARPSend || currentState == WaitForARPReply) {
-            // Blink LED1 (middle one) every second.
-            if((nt - t) >= (DWORD)(TICK_SECOND/1024ul))
-            {
-                t = nt;
+        if((nt - t) >= (DWORD)(TICK_SECOND/1024ul))
+        {
+            t = nt;
+            if (currentState == ARPSend || currentState == WaitForARPReply) {
+                // Blink LED 1 (middle one)
                 LED1_IO ^= 1;
-                ClrWdt();  //Clear the watchdog
             }
+            else {
+                // Blink LED 0 (left one)
+                LED0_IO ^= 1;
+            }
+            ClrWdt();  //Clear the watchdog
         }
+
         switch (currentState)
         {
             case ARPSend:
@@ -223,8 +219,8 @@ static DWORD dwLastIP = 0;
             case WaitForARPReply:
                 // If ARP is resolved, open sockets
                 if (ARPIsResolved(&DHCP_Server.IPAddr, &DHCP_Server.MACAddr)) {
-                    LED1_IO = 0;
-                    InitializeDHCPRelay();
+                    LED1_IO = 0; // Turn off LED1
+                    InitializeDHCPRelay(); // Initialize Sockets
                     currentState = Relaying;
                 }
                 else {
@@ -234,7 +230,8 @@ static DWORD dwLastIP = 0;
                     // never responds
                     if((WORD)nt - arpTime > arpMaxTime)
                     {
-                        // Exponentially increase timeout until we reach 6 attempts then stay constant
+                        // Exponentially increase timeout until we reach 6
+                        // attempts then stay constant
                         if(arpRetryCount < 6)
                         {
                             arpRetryCount++;
@@ -247,14 +244,6 @@ static DWORD dwLastIP = 0;
                 }
                 break;
             case Relaying:
-                // Blink LED0 (right most one) every second.
-                if((nt - t) >= (DWORD)(TICK_SECOND/1024ul))
-                {
-                    t = nt;
-                    LED0_IO ^= 1;
-                    ClrWdt();  //Clear the watchdog
-                }
-
                 // Check incoming broadcasts
                 receiveDHCPFromClientTask();
                 // Check incoming server replies
@@ -268,6 +257,7 @@ static DWORD dwLastIP = 0;
     }//end of while(1)
 }//end of main()
 
+// Create the buffers and open the proper sockets
 void InitializeDHCPRelay(void)
 {
     // Initialize the heap in the declared heap character array.
@@ -387,6 +377,7 @@ static void InitializeBoard(void)
 
 static void InitAppConfig(void)
 {
+    // We have a static IP, so no DHCP Client is needed
 	AppConfig.Flags.bIsDHCPEnabled = FALSE;
 	AppConfig.Flags.bInConfigMode = TRUE;
 

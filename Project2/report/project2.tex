@@ -124,12 +124,19 @@ As described in the ASG diagram, the relay agent has two components. One compone
 	\caption{ASG diagram of the Relaying state.\label{fig:asgRelaying}}
 \end{figure}
 
-\subsection{Seperate Client/Server components}
+\subsection{Seperate Client and Server components}
+We have chosen to have seperate components dealing with broadcasts sent by clients (components 1 and 2) and replies sent by the server (components 3 and 4). These messages are already seperated because they arrive on different sockets. Because both types of messages are handled differently (the address for the relay is added in the messages that need to be send to the server, while messages to the client do not have to be altered) and they are sent out on different sockets as well, we have chosen to keep these seperate from start to end. For this, they also use seperate buffers: one for broadcasts received from clients and one for replies received from servers.\\
+The given TCPIP Stack however only stores one UDP Packet at a time and as such there will never be a broadcast and a server reply at the same time. As a result, having seperate components does not give a performance advantage. However, we have decided to keep them seperate because they are logically different.
 
-\subsection{Seperate Receive/Process components}
+\subsection{Seperate Receive and Process/Send components}
+For both broadcasts and serverreplies we also have seperate components for receiving and processing/sending. The Receive components (components 1 and 3) check if there is a message available on their respective socket and if so, they store this message in the appropriate buffer. The components will only check for new messages if there is room in the buffer.
+
+The Process/Send components (components 2 and 4) will read messages from their buffers, do any required processing and then forward them on the appropriate relay.\\
+The Process/Send component for client broadcasts (component 2) will add the IP of the Relay agent to the DHCP packet before forwarding it to the server.\\
+The Process/Send component for server replies (component 4) will relay the received packet directly to clients via broadcast without any modification.
 
 \subsection{Buffer size}
-The internal buffers from which the processing-components of the application consume and for which the receiving-components of the application produce dhcp packages, have a size of one. This means that each pair of components (receiver-processor) of the application are tightly coupled. The consumer component has to consume the last packet before the producer can produce a new one. This limitation makes sure there is enough memory on the processor to hold the buffer. While this may seem like a heavy limitation, it is really not. The TCP/IP stack implementation provided does also work with only one packet.\\
+The internal buffers from which the processing-components of the application consume and for which the receiving-components of the application produce dhcp packages, have a size of one. This means that each pair of components (receiver-processor) of the application are tightly coupled. The consumer components have to consume the last packet before the producers can produce a new one. This limitation makes sure there is enough memory on the processor to hold the buffers. While this may seem like a heavy limitation, it is really not. The TCP/IP stack implementation provided will only put one message in the buffer at a time.\\
 Given enough memory, this buffer could easily be extended to contain more than one message. This would not affect the workings of the components 
 
 \subsection{Immeadiate state changes}

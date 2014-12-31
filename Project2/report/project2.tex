@@ -96,7 +96,7 @@ To compile the program, simply type \textbf{\textit{make DHCPRelay}} while in th
 To upload the program to the pic, upload \textbf{\textit{main.hex}} using tftp as described in \href{http://www.foditic.org/SORTES\_14/missions/picUnixE.php}{\textbf{PIC development in C on UNIX howto}}.
 
 \subsection{Tests}
-To test the board, you can enable a DHCP client in the subnet of the DHCP relay agent. This client should now be assigned an IP address by the DHCP server.\\
+To test the board, you can enable a DHCP client in the subnet of the DHCP relay agent. This client should now be assigned an IP address by the DHCP server. The server used in our tests is an instance of \href{http://www.thekelleys.org.uk/dnsmasq/doc.html}{\textbf{Dnsmasq}} running on a ubuntu machine. The dhcp client used is a windows 7 machine. The configuration files of the server can be found in appendix \ref{app:serverconfig}. All DHCP packets sent and received on both client and server were analysed with \href{https://www.wireshark.org/}{\textbf{Wireshark}} to ensure correctness. \\
 
 The following tests have been run to confirm the correct working of the agent:
 \begin{itemize}
@@ -139,7 +139,7 @@ The Process/Send component for client broadcasts (component 2) will add the IP o
 The Process/Send component for server replies (component 4) will relay the received packet directly to clients via broadcast without any modification.
 
 \subsection{Buffer size}
-The internal buffers from which the processing-components of the application consume and for which the receiving-components of the application produce dhcp packages, have a size of one. This means that each pair of components (receiver-processor) of the application are tightly coupled. The consumer components have to consume the last packet before the producers can produce a new one. This limitation makes sure there is enough memory on the processor to hold the buffers. While this may seem like a heavy limitation, it is really not. The TCP/IP stack implementation provided will only put one message in the buffer at a time.\\
+The internal buffers from which the processing-components of the application consume and for which the receiving-components of the application produce dhcp packages, have a size of one. This means that each pair of components (receiver-processor) of the application are tightly coupled. The consumer components have to consume the last packet before the producers can produce a new one. This limitation makes sure there is enough memory on the processor to hold the buffers. While this may seem like a heavy limitation, it is really not. The TCP/IP stack implementation provided will only make one message available at a time.\\
 Given enough memory, this buffer could easily be extended to contain more than one message. This would not affect the workings of the components 
 
 \subsection{Immeadiate state changes}
@@ -175,5 +175,12 @@ Given enough memory, this buffer could easily be extended to contain more than o
 
 \subsection{Debug.h}
 \lstinputlisting[language=C]{../src/Debug.h}
+
+\section{Server configuration} \label{app:serverconfig}
+\subsection{/etc/network/interfaces}
+\lstinputlisting[language=bash]{../conf/interfaces}
+
+\subsection{/etc/dnsmasq.conf}
+\lstinputlisting[language=bash]{../conf/dnsmasq.conf}
 
 \end{document}

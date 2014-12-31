@@ -58,22 +58,26 @@ void listen(UDP_SOCKET socket, dhcpBuffer_t* buffer) {
     BYTE i;
     BYTE* Option;
     BYTE* Len;
-    char debugString[32]; // for debugging purposes
+
     // Check to see if a valid DHCP packet has arrived
     availableData = UDPIsGetReady(socket);
     if(availableData < 241u)
         return;
+    if(offerReceived) {
+        // TCPIP Stack crashes on first message after OFFER. Reset.
+        Reset();
+        return;
+    }
     // Allocate the header
     BOOTPHeader = (BOOTP_HEADER *) malloc(sizeof(BOOTP_HEADER));
     if (!BOOTPHeader) {
-        DisplayString(16, "no room for header");
         UDPDiscard();
         return;
     }
 
     // Retrieve the BOOTP header
-    UDPGetArray((BYTE*)BOOTPHeader, sizeof(BOOTP_HEADER));
-    //for (i = 0; i < sizeof(BOOTP_HEADER) && UDPGet((BYTE *)BOOTPHeader + i); i++);
+    //UDPGetArray((BYTE*)BOOTPHeader, sizeof(BOOTP_HEADER));
+    for (i = 0; i < sizeof(BOOTP_HEADER) && UDPGet((BYTE *)BOOTPHeader + i); i++);
 
     availableData = availableData - sizeof(BOOTP_HEADER);
     // Allocate the payload
@@ -81,7 +85,6 @@ void listen(UDP_SOCKET socket, dhcpBuffer_t* buffer) {
     if (!packetData)
     {
         // Not enough room for payload. Free header and discard the UDP packet
-        DisplayString(0, "no room for data");
         free((unsigned char _MALLOC_SPEC*) BOOTPHeader);
         UDPDiscard();
         return;
@@ -96,8 +99,10 @@ void listen(UDP_SOCKET socket, dhcpBuffer_t* buffer) {
 
     // Obtain Magic Cookie.
     // Let the server/client verify it
-    UDPGetArray((BYTE*)(packetData + dataCount), sizeof(DWORD));
+    for (i = 0; i < sizeof(DWORD) && UDPGet((BYTE *)packetData + dataCount + i); i++);
+    //UDPGetArray((BYTE*)(packetData + dataCount), sizeof(DWORD));
     dataCount += sizeof(DWORD);
+
 
     // Obtain options
     while(dataCount < availableData)
@@ -121,8 +126,9 @@ void listen(UDP_SOCKET socket, dhcpBuffer_t* buffer) {
         }
 
         // Read option
-        // for (i = 0; i < *Len && UDPGet((BYTE*)(packetData + dataCount + i)); i++);
-        dataCount += UDPGetArray((BYTE*)(packetData + dataCount), *Len);
+        for (i = 0; i < *Len && UDPGet((BYTE*)(packetData + dataCount + i)); i++);
+        dataCount += *Len;
+        //dataCount += UDPGetArray((BYTE*)(packetData + dataCount), *Len);
     }
     if (dataCount > availableData) {
         dataCount = availableData;

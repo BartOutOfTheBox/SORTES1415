@@ -1,96 +1,12 @@
-/*********************************************************************
+/*
+ * Main.c
  *
- *  Main Application Entry Point for DHCPRelay
- *  Module for Microchip TCP/IP Stack
- *   -Relays messages between clients and a DHCP Server
- *	 -Reference: AN833
+ * DHCPRelay Main App
+ * Based on MainDemo.c
  *
- *********************************************************************
- * FileName:        Main.c
- * Dependencies:    TCPIP.h
- * Processor:       PIC18, PIC24F, PIC24H, dsPIC30F, dsPIC33F, PIC32
- * Compiler:        Microchip C32 v1.05 or higher
- *					Microchip C30 v3.12 or higher
- *					Microchip C18 v3.30 or higher
- *					HI-TECH PICC-18 PRO 9.63PL2 or higher
- * Company:         Microchip Technology, Inc.
- *
- * Software License Agreement
- *
- * Copyright (C) 2002-2009 Microchip Technology Inc.  All rights
- * reserved.
- *
- * Microchip licenses to you the right to use, modify, copy, and
- * distribute:
- * (i)  the Software when embedded on a Microchip microcontroller or
- *      digital signal controller product ("Device") which is
- *      integrated into Licensee's product; or
- * (ii) ONLY the Software driver source files ENC28J60.c, ENC28J60.h,
- *		ENCX24J600.c and ENCX24J600.h ported to a non-Microchip device
- *		used in conjunction with a Microchip ethernet controller for
- *		the sole purpose of interfacing with the ethernet controller.
- *
- * You should refer to the license agreement accompanying this
- * Software for additional information regarding your rights and
- * obligations.
- *
- * THE SOFTWARE AND DOCUMENTATION ARE PROVIDED "AS IS" WITHOUT
- * WARRANTY OF ANY KIND, EITHER EXPRESS OR IMPLIED, INCLUDING WITHOUT
- * LIMITATION, ANY WARRANTY OF MERCHANTABILITY, FITNESS FOR A
- * PARTICULAR PURPOSE, TITLE AND NON-INFRINGEMENT. IN NO EVENT SHALL
- * MICROCHIP BE LIABLE FOR ANY INCIDENTAL, SPECIAL, INDIRECT OR
- * CONSEQUENTIAL DAMAGES, LOST PROFITS OR LOST DATA, COST OF
- * PROCUREMENT OF SUBSTITUTE GOODS, TECHNOLOGY OR SERVICES, ANY CLAIMS
- * BY THIRD PARTIES (INCLUDING BUT NOT LIMITED TO ANY DEFENSE
- * THEREOF), ANY CLAIMS FOR INDEMNITY OR CONTRIBUTION, OR OTHER
- * SIMILAR COSTS, WHETHER ASSERTED ON THE BASIS OF CONTRACT, TORT
- * (INCLUDING NEGLIGENCE), BREACH OF WARRANTY, OR OTHERWISE.
- *
- *
- * Author              Date         Comment
- *~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
- * Nilesh Rajbharti	4/19/01	Original (Rev. 1.0)
- * Nilesh Rajbharti	2/09/02	Cleanup
- * Nilesh Rajbharti	5/22/02	Rev 2.0 (See version.log for detail)
- * Nilesh Rajbharti	7/9/02	Rev 2.1 (See version.log for detail)
- * Nilesh Rajbharti	4/7/03	Rev 2.11.01 (See version log for detail)
- * Howard Schlunder	10/1/04	Beta Rev 0.9 (See version log for detail)
- * Howard Schlunder	10/8/04	Beta Rev 0.9.1 Announce support added
- * Howard Schlunder	11/29/04Beta Rev 0.9.2 (See version log for detail)
- * Howard Schlunder	2/10/05	Rev 2.5.0
- * Howard Schlunder	1/5/06	Rev 3.00
- * Howard Schlunder	1/18/06	Rev 3.01 ENC28J60 fixes to TCP, 
- *				UDP and ENC28J60 files
- * Howard Schlunder	3/01/06	Rev. 3.16 including 16-bit micro support
- * Howard Schlunder	4/12/06	Rev. 3.50 added LCD for Explorer 16
- * Howard Schlunder	6/19/06	Rev. 3.60 finished dsPIC30F support, 
- *                              added PICDEM.net 2 support
- * Howard Schlunder	8/02/06	Rev. 3.75 added beta DNS, NBNS, and HTTP client
- *                              (GenericTCPClient.c) services
- * Howard Schlunder	12/28/06Rev. 4.00RC added SMTP, Telnet, substantially 
- *                              modified TCP layer
- * Howard Schlunder	4/09/07 Rev. 4.02 added TCPPerformanceTest, 
- *                              UDPPerformanceTest, Reboot and fixed some bugs
- * Howard Schlunder	x/xx/07 Rev. 4.03
- * HSchlunder & EWood	8/27/07 Rev. 4.11
- * HSchlunder & EWood	10/08/07Rev. 4.13
- * HSchlunder & EWood	11/06/07Rev. 4.16
- * HSchlunder & EWood	11/08/07Rev. 4.17
- * HSchlunder & EWood	11/12/07Rev. 4.18
- * HSchlunder & EWood	2/11/08 Rev. 4.19
- * HSchlunder & EWood   4/26/08 Rev. 4.50 Moved most code to other files 
- *                                        for clarity
- * KHesky               7/07/08 Added ZG2100-specific support
- * HSchlunder & EWood   7/24/08 Rev. 4.51
- * Howard Schlunder	11/10/08Rev. 4.55
- * Howard Schlunder	04/14/09Rev. 5.00
- * Howard Schlunder	07/10/09Rev. 5.10
- * Marc Lobelle         03/15/10- adapted to support sdcc compiler
- *                              - removed some code not related to networking
- *                              - removed serial line support
- *                              - added a few debuging functions
- * Arne Van der Stappen 15/12/15-Copied from MainDemo.c
- ********************************************************************/
+ *  Created on: 15-dec.-2014
+ *      Author: Arne Van der Stappen & Bart Verhoeven
+ */
 /*
  * This symbol uniquely defines this file as the main entry point.
  * There should only be one such definition in the entire project,
@@ -130,6 +46,8 @@ dhcpBuffer_t* DHCPServerBuffer;
 // Application is still initializing
 typedef enum { Initialization, ARPSend, WaitForARPReply, Relaying } relayState_t;
 relayState_t currentState = Initialization;
+
+BOOL offerReceived = FALSE;
 
 // Private helper functions.
 // These may or may not be present in all applications.
@@ -193,21 +111,8 @@ static DWORD dwLastIP = 0;
         // appropriate stack entity to process it.
         StackTask();
 
-        // Blink LEDs every second.
-        nt =  TickGetDiv256();
-        if((nt - t) >= (DWORD)(TICK_SECOND/1024ul))
-        {
-            t = nt;
-            if (currentState == ARPSend || currentState == WaitForARPReply) {
-                // Blink LED 1 (middle one)
-                LED1_IO ^= 1;
-            }
-            else {
-                // Blink LED 0 (left one)
-                LED0_IO ^= 1;
-            }
-            ClrWdt();  //Clear the watchdog
-        }
+        // Time
+        nt = TickGetDiv256();
 
         switch (currentState)
         {
@@ -219,7 +124,6 @@ static DWORD dwLastIP = 0;
             case WaitForARPReply:
                 // If ARP is resolved, open sockets
                 if (ARPIsResolved(&DHCP_Server.IPAddr, &DHCP_Server.MACAddr)) {
-                    LED1_IO = 0; // Turn off LED1
                     InitializeDHCPRelay(); // Initialize Sockets
                     currentState = Relaying;
                 }
@@ -294,7 +198,6 @@ void DisplayString(BYTE pos, char* text)
    BYTE max= 32-pos;
    strlcpy((char*)&LCDText[pos], text,(l<max)?l:max );
    LCDUpdate();
-
 }
 
 

@@ -139,10 +139,11 @@ The Process/Send component for client broadcasts (component 2) will add the IP o
 The Process/Send component for server replies (component 4) will relay the received packet directly to clients via broadcast without any modification.
 
 \subsection{Buffer size}
-The internal buffers from which the processing-components of the application consume and for which the receiving-components of the application produce dhcp packages, have a size of one. This means that each pair of components (receiver-processor) of the application are tightly coupled. The consumer components have to consume the last packet before the producers can produce a new one. This limitation makes sure there is enough memory on the processor to hold the buffers. While this may seem like a heavy limitation, it is really not. The TCP/IP stack implementation provided will only make one message available at a time.\\
+The internal buffers from which the processing-components of the application consume and for which the receiving-components of the application produce dhcp packages, have a size of one. This means that each pair of components (receiver-processor) of the application are tightly coupled. The consumer components have to consume the last packet before the producers can produce a new one. This limitation makes sure there is enough memory on the processor to hold the buffers. While this may seem like a heavy limitation, it is really not. The TCP/IP stack implementation provided will only make one message available at a time. However, if relaying a message fails, a new message cannot be stored in the buffer until relaying the old message was successful.\\
 Given enough memory, this buffer could easily be extended to contain more than one message. This would not affect the workings of the components 
 
-\subsection{Immeadiate state changes}
+\subsection{Handling messages asap}
+Whenever a message is available, it is processed and relayed in the same iteration of the main loop. The TCP/IP stack will discard old messages in each iteration. By handling messages this fast, we avoid losing messages. Because the amount of processing required is minimal, it does not block other tasks in the TCP/IP stack for a very long time. The message receiving components will not be blocked due to full buffers for a very long period of time, since messages are handled and removed from the buffer as soon as possible.
 
 \newpage
 

@@ -109,8 +109,11 @@ The following tests have been run to confirm the correct working of the agent:
 
 \section{Design Decisions}
 
-The code of this relay agent was produced by translating ASG diagrams \ref{fig:asg} and \ref{fig:asgRelaying} to C.
-As described in the ASG diagram, the relay agent has two components. One component receives ip packages, the other component sends ip packages. TODO VERDERE UITLEG
+The code of this relay agent was produced by translating ASG diagrams \ref{fig:asg} and \ref{fig:asgRelaying} to C.\\
+
+As described in the ASG diagram, the relay agent starts out in a state where it initializes itself. In this initialization state interrupts and application specific hardware, the LCD, the timer, and the TCP/IP stack, are initialized. When this is completed, the agent will figure out the MAC address of its standard gateway (the router) through ARP. The agent will finally be in the Relaying state.\\
+
+The relaying state consists of 4 components. These components are responsible for receiving and processing/sending messages to both client and server. Component 1 handles incoming client messages, component 2 processes and sends these messages to the server, component 3 receives server messages, and component 4 processes and sends these messages to the client.
 
 \begin{figure}
 	\centering
